@@ -6,6 +6,8 @@
  *
  * Sources per section:
  *   scoring  → Scoring tab (yellow parameter cells) + DESIGN.md §2.5 (3+ bonus)
+ *   hand     → Scoring tab row 13
+ *   preRun   → Pre-Run Modifiers tab (risk modifiers)
  *   boss     → Boss Round Modifiers tab baseline note + DESIGN.md §2.6
  *   shop     → Shops tab
  *   economy  → Economy tab
@@ -69,6 +71,13 @@ export interface Balance {
     /** Slot 1 is forced to an Extension card when the player holds none (Shops tab proposal). */
     guaranteeExtension: boolean;
   };
+  preRun: {
+    /**
+     * Steep Curve risk modifier (Pre-Run Modifiers tab): all thresholds are
+     * scaled and the loadout gains points. Index = level − 1. Wired in M7.
+     */
+    steepCurve: { thresholdScale: number[]; loadoutPoints: number[] };
+  };
   economy: {
     roundClear: number;
     /** +1 per this fraction of threshold beaten by. */
@@ -88,11 +97,11 @@ export interface Balance {
 
 export const defaultBalance: Balance = {
   rounds: { total: 24, bossEvery: 4 },
-  hand: { size: 7 },
+  hand: { size: 10 },
   lives: { base: 0 },
   scoring: {
     multiplierBase: 1.4,
-    round1Threshold: 6,
+    round1Threshold: 4,
     thresholdGrowth: 1.5,
     bossThresholdFactor: 1.5,
     strain: 1,
@@ -122,6 +131,9 @@ export const defaultBalance: Balance = {
     sellFraction: 0.5,
     handLimits: { sound_shift: 3, extension: 3, loanword: 3, utility: 2 },
     guaranteeExtension: true,
+  },
+  preRun: {
+    steepCurve: { thresholdScale: [1.15, 1.3, 1.5, 1.75], loadoutPoints: [1, 2, 3, 4] },
   },
   economy: {
     roundClear: 3,

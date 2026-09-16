@@ -1,6 +1,7 @@
 /** P1-01: balance mirrors the Scoring tab parameters used by the scenario. */
 import { describe, expect, it } from 'vitest';
 import { defaultBalance } from '../src/content';
+import { scoring } from '../src/engine';
 import scenario from './fixtures/scenario-24.json';
 
 describe('balance', () => {
@@ -18,10 +19,19 @@ describe('balance', () => {
   it('has the run shape from DESIGN.md §2.1', () => {
     expect(defaultBalance.rounds.total).toBe(24);
     expect(defaultBalance.rounds.bossEvery).toBe(4);
-    expect(defaultBalance.hand.size).toBe(7);
+    expect(defaultBalance.hand.size).toBe(10);
     expect(defaultBalance.boss.feedIntervalMs).toHaveLength(6);
     expect(defaultBalance.boss.starterMorphemes).toHaveLength(6);
     expect(defaultBalance.economy.bossClear).toHaveLength(6);
+  });
+
+  it('unmodified play reaches the first boss: thresholds 4 / 6 / 9 / 20', () => {
+    expect([1, 2, 3, 4].map((r) => scoring.threshold(r, defaultBalance))).toEqual([4, 6, 9, 20]);
+  });
+
+  it('Steep Curve risk modifier has four levels of scale and points', () => {
+    expect(defaultBalance.preRun.steepCurve.thresholdScale).toHaveLength(4);
+    expect(defaultBalance.preRun.steepCurve.loadoutPoints).toEqual([1, 2, 3, 4]);
   });
 
   it('shop prices and odds match the Shops tab', () => {

@@ -128,14 +128,14 @@ describe('EXTEND → SCORED → SHOP → ROUND_START', () => {
     const r = s.lastResult;
     expect(r?.round).toBe(1);
     expect(r?.morphemes).toBe(1);
-    expect(r?.threshold).toBe(6);
+    expect(r?.threshold).toBe(4);
     expect(r?.outcome).toBe(r?.passed ? 'pass' : 'game_over');
     if (r?.passed) {
       expect(s.currency).toBe(defaultBalance.economy.roundClear);
       expect(s.streak).toBe(1);
       s = reduce(s, { type: 'CONTINUE' }, content);
       expect(s.phase).toBe('SHOP');
-      expect(s.shop).toEqual({ rerolls: 0 });
+      expect(s.shop?.offers).toHaveLength(defaultBalance.shop.cardSlots);
       s = reduce(s, { type: 'LEAVE' }, content);
       expect(s.phase).toBe('ROUND_START');
       expect(s.round).toBe(2);

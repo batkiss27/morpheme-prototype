@@ -15,11 +15,11 @@ describe('rounds and thresholds', () => {
   });
 
   it('threshold = round(T1 × growth^(round−1) × bossFactor)', () => {
-    expect(S.threshold(1, b)).toBe(6);
-    expect(S.threshold(2, b)).toBe(9);
-    expect(S.threshold(3, b)).toBe(14); // 13.5 rounds half up
-    expect(S.threshold(4, b)).toBe(30); // 20.25 × 1.5
-    expect(S.threshold(24, b)).toBe(101005);
+    expect(S.threshold(1, b)).toBe(4);
+    expect(S.threshold(2, b)).toBe(6);
+    expect(S.threshold(3, b)).toBe(9);
+    expect(S.threshold(4, b)).toBe(20); // 13.5 × 1.5 = 20.25
+    expect(S.threshold(24, b)).toBe(67336);
   });
 
   it('threshold responds to balance changes', () => {
@@ -82,7 +82,7 @@ describe('scoreRegular', () => {
     expect(r.effectiveMorphemes).toBe(14);
     expect(r.extensionBonus).toBe(1.5);
     expect(r.score).toBe(13072);
-    expect(r.threshold).toBe(3941);
+    expect(r.threshold).toBe(2627);
     expect(r.passed).toBe(true);
     expect(r.kind).toBe('regular');
   });
@@ -109,7 +109,7 @@ describe('scoreBoss', () => {
   it('uses boss word points × morpheme mult × in-run mult, no extension bonus', () => {
     const r = S.scoreBoss({ round: 8, bossWordPoints: 52, morphemes: 6, inRunMult: 1.2 }, b);
     expect(r.score).toBe(336);
-    expect(r.threshold).toBe(154);
+    expect(r.threshold).toBe(103);
     expect(r.extensionBonus).toBe(1);
     expect(r.kind).toBe('boss');
   });
@@ -118,7 +118,8 @@ describe('scoreBoss', () => {
 describe('roundHalfUp', () => {
   it('rounds .5 up like Excel ROUND for positives', () => {
     expect(S.roundHalfUp(13.5)).toBe(14);
-    expect(S.roundHalfUp(20.25 * 1.5)).toBe(30);
+    expect(S.roundHalfUp(20.25)).toBe(20);
+    expect(S.roundHalfUp(20.5)).toBe(21);
     expect(S.roundHalfUp(2.4999)).toBe(2);
   });
 });

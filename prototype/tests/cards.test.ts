@@ -263,7 +263,7 @@ describe('loanword cards', () => {
     expect(r.destroyed).toHaveLength(3);
     expect(r.destroyed.every((t) => t.baseValue === 1)).toBe(true);
     expect(allTiles(r)).toHaveLength(100);
-    expect(r.pool).toHaveLength(90);
+    expect(r.pool).toHaveLength(100 - defaultBalance.hand.size - 3);
   });
 
   it('Redraw replaces the hand, only before the first step', () => {
@@ -271,7 +271,7 @@ describe('loanword cards', () => {
     let s = reduce(newRun(c), { type: 'START_ROUND' }, c);
     s = withCards(s, 'redraw', 'redraw');
     const r = reduce(s, { type: 'USE_CARD', instanceId: 'credraw0' }, c);
-    expect(r.hand).toHaveLength(7);
+    expect(r.hand).toHaveLength(defaultBalance.hand.size);
     expect(r.hand.map((t) => t.id)).not.toEqual(s.hand.map((t) => t.id));
     expect(allTiles(r)).toHaveLength(100);
     const played = playFromHand(r, c, 2, 'start');

@@ -458,6 +458,8 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
 | 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
 | 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
+| 2026-09-16 | Balance retune: hand size 10 (was 7) and round-1 threshold 4 (was 6) so an unmodified run nearly always reaches B1 (4 / 6 / 9 / 20). Workbook Scoring tab C6 and new row 13 updated; scenario fixture regenerated (all 24 rounds still pass). | §7 |
+| 2026-09-16 | New pre-run *Risk* category "Steep Curve" (thresholds ×1.15 … ×1.75, grants +1 … +4 loadout points) tracked in `balance.preRun.steepCurve` and the Pre-Run Modifiers tab; wired to `threshold()` in M7 (P7-07). | §7 |
 | 2026-09-16 | RoundScreen shows live candidate words for front/back with a ✓/✗ dictionary hint before the step is played; the engine still validates on `PLAY_STEP` and rejected steps show red with the attempted word. | §6 |
 
 ---
@@ -467,6 +469,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | Date | Version | Change |
 |---|---|---|
 | 2026-09-16 | 0.1 | Initial spec drafted from DESIGN.md rev 3 and Morpheme_Master.xlsx. |
+| 2026-09-16 | 0.5 | Balance retune (hand 10, T1 = 4) and the Steep Curve risk modifier recorded; DESIGN.md rev 4. |
 | 2026-09-16 | 0.4 | M3 landed. §4: extension-card and Sound Shift chain semantics (dirty-chain rule). §5: USE_CARD and shop actions; undo snapshots. §7: card registry. Decision log: eight card/shop entries. |
 | 2026-09-16 | 0.3 | M2 landed. §5: `FORFEIT` action. §6: Start/Round/Score/Shop/End screens exist; boss phases use a stub screen until M4; ScoreScreen also serves BOSS_END. Decision log: forfeit, ROUND_START auto-advance, round-1 bonus rule, candidate-word hints. |
 | 2026-09-16 | 0.2 | M0/M1 landed. §3: `tests/` and `scripts/` live under `prototype/` (they need its toolchain). §5: listed the M1 action set and the log/undo mechanics. Decision log: first-word rule, life-loss flow, D1 default, rounding, morpheme ids. `EngineContent` = `{ balance, dictionary, letters }` is what the reducer receives. |

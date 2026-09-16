@@ -1,6 +1,6 @@
 # Morpheme — Game Design Document
 
-> **Status:** Early brainstorm, revision 3. This document is the narrative design;
+> **Status:** Early brainstorm, revision 4 (rev 4: hand size 10, round-1 threshold 4, Steep Curve risk modifier). This document is the narrative design;
 > the companion workbook **`Morpheme_Master.xlsx`** is the master list of values
 > (tiles, cards, modifiers, economy, scoring scenarios, achievements). When the two
 > disagree, the spreadsheet wins for values and this document wins for rules.
@@ -93,7 +93,8 @@ Lexicon screen: spend points, set loadout (§6)
 - The player draws from **one tile pool per run**. The starting composition is the
   standard Scrabble distribution (100 tiles including 2 blanks), adjusted by the
   loadout and by Loanword cards during the run.
-- Each round the player draws a **hand** (default 7) and may play tiles from it.
+- Each round the player draws a **hand** (default 10; raised from 7 so early
+  rounds nearly always offer a natural extension) and may play tiles from it.
 - **[proposal] Tiles played into the word are committed** — they leave the pool for
   the rest of the run and live in the word. The pool is therefore a finite resource
   that Loanword cards replenish. (Alternative: played tiles return to the pool;
@@ -257,6 +258,10 @@ boss round score    = Σ over words placed: (sum of tile values)
   24-round scenario.
 - **Strain** lowers the effective morpheme count by 1 for that round.
 - Thresholds follow a geometric curve with a boss bump; see the *Scoring* tab.
+  **Tuning intent:** an unmodified run (no loadout, no cards) should almost
+  always reach the first Boss Round; the round-1 threshold starts at 4
+  (4 / 6 / 9 / 20 for rounds 1–4). Difficulty for experienced players comes
+  from the opt-in **Steep Curve** risk modifier (§6.4), not the base curve.
 
 ### 2.8 Shops
 
@@ -415,10 +420,16 @@ on base economy) and easter eggs (secret words) are included. Full list in the
   Tempo (boss timer/feed), Insight (boss preview/reroll), Reserve (starting
   cards/currency), Clemency (reduced strain). Details in the *Pre-Run Modifiers*
   tab.
+- **Risk modifiers** (available from the start): opt-in handicaps that raise the
+  scoring thresholds and **grant extra loadout points** for that run. The first
+  is **Steep Curve** — Level 1: all thresholds ×1.15 for +1 loadout point;
+  **[proposal]** Levels 2–4: ×1.3 / ×1.5 / ×1.75 for +2 / +3 / +4. It costs no
+  loadout points itself. Details in the *Pre-Run Modifiers* tab.
 - **Challenge modifiers** (unlocked after the first win): opt-in handicaps —
-  vowels worth 0, shorter boss timer, no lives, higher thresholds, hidden boss
-  queue, etc. — each **grants extra loadout points** for that run. Some are
-  descendants of the old Grammarian rules. Details in the same tab.
+  vowels worth 0, shorter boss timer, no lives, hidden boss queue, etc. — each
+  **grants extra loadout points** for that run. Some are descendants of the old
+  Grammarian rules. **[proposal]** The *Steep* challenge (+25% thresholds) is
+  superseded by Steep Curve. Details in the same tab.
 
 ### 6.5 Progression flow
 
