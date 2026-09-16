@@ -11,7 +11,7 @@
  */
 
 import { tileLetter } from './tiles';
-import type { Chain, Dictionary, Morpheme, MorphemeSide, Result, Side, Span, Tile } from './types';
+import type { Chain, Dictionary, Letter, Morpheme, MorphemeSide, Result, Side, Span, Tile } from './types';
 
 // ---------------------------------------------------------------------------
 // Reading
@@ -210,4 +210,101 @@ export function morphemesAddedIn(chain: Chain, round: number): { front: number; 
     else back++;
   }
   return { front, back, total: front + back };
+}
+
+// ---------------------------------------------------------------------------
+// Structural edits used by cards (M3). No dictionary checks here.
+// ---------------------------------------------------------------------------
+
+/** Index range [start, end) of each morpheme, in positional order. */
+export function morphemeRanges(chain: Chain): Span[] {
+  const ranges: Span[] = [];
+  let i = 0;
+  for (const m of chain.morphemes) {
+    ranges.push([i, i + m.tileIds.length]);
+    i += m.tileIds.length;
+  }
+  return ranges;
+}
+
+/** Recompute every morpheme's tileIds from the tile order (after a swap). */
+function rebindMorphemes(chain: Chain, tiles: readonly Tile[]): Morpheme[] {
+  return morphemeRanges(chain).map((r, k) => ({
+    ...(chain.morphemes[k] as Morpheme),
+    tileIds: tiles.slice(r[0], r[1]).map((t) => t.id),
+  }));
+}
+
+export function indexOfTile(chain: Chain, tileId: string): number {
+  return chain.tiles.findIndex((t) => t.id === tileId);
+}
+
+/** Change the letter a chain tile spells (Sound Shift). The tile keeps its base value. */
+export function setTileLetter(chain: Chain, tileId: string, letter: Letter): Chain {
+  const i = indexOfTile(chain, tileId);
+  if (i === -1) throw new Error(`tile ${tileId} not in chain`);
+  const tiles = chain.tiles.map((t, k) => (k === i ? { ...t, playedAs: letter } : t));
+  return { ...chain, tiles };
+}
+
+/** Swap a tile with its right-hand neighbour (Metathesis). Morphemes keep their sizes. */
+export function swapWithNext(chain: Chain, tileId: string): Result<Chain> {
+  const i = indexOfTile(chain, tileId);
+  if (i === -1) return { ok: false, error: `tile ${tileId} not in chain` };
+  if (i === chain.tiles.length - 1) return { ok: false, error: 'the last letter has nothing after it to swap with' };
+  const tiles = chain.tiles.slice();
+  const a = tiles[i] as Tile;
+  tiles[i] = tiles[i + 1] as Tile;
+  tiles[i + 1] = a;
+  return { ok: true, value: { ...chain, tiles, morphemes: rebindMorphemes(chain, tiles) } };
+}
+
+/**
+ * Remove a tile from the chain (Elision). Its morpheme shrinks; an emptied
+ * morpheme disappears. Spans contract around the removed index. Returns the
+ * removed tile so the caller can move it to `destroyed`.
+ */
+export function removeTile(chain: Chain, tileId: string): Result<{ chain: Chain; removed: Tile }> {
+  const i = indexOfTile(chain, tileId);
+  if (i === -1) return { ok: false, error: `tile ${tileId} not in chain` };
+  if (chain.tiles.length <= 2) return { ok: false, error: 'the word must keep at least 2 letters' };
+  const removed = chain.tiles[i] as Tile;
+  const tiles = chain.tiles.filter((_, k) => k !== i);
+  const morphemes = chain.morphemes
+    .map((m) => ({ ...m, tileIds: m.tileIds.filter((id) => id !== tileId) }))
+    .filter((m) => m.tileIds.length > 0);
+  const contract = (s: Span): Span => [s[0] > i ? s[0] - 1 : s[0], s[1] > i ? s[1] - 1 : s[1]];
+  return {
+    ok: true,
+    value: { removed, chain: { ...chain, tiles, morphemes, headSpan: contract(chain.headSpan), tailSpan: contract(chain.tailSpan) } },
+  };
+}
+
+/** Are the active words (head and tail spans) dictionary words? */
+export function activeWordsValid(chain: Chain, dict: Dictionary): { ok: true } | { ok: false; word: string } {
+  const head = headText(chain);
+  if (!dict.has(head)) return { ok: false, word: head };
+  const tail = tailText(chain);
+  if (!dict.has(tail)) return { ok: false, word: tail };
+  return { ok: true };
+}
+
+/**
+ * Append tiles as a new back morpheme with an explicit tail span (Extension
+ * cards). The chain stops being natural. `tailStart` is the index (in the
+ * resulting chain) where the new tail word begins.
+ */
+export function appendChained(chain: Chain, tiles: readonly Tile[], morpheme: Morpheme, tailStart: number): Chain {
+  const end = chain.tiles.length + tiles.length;
+  return {
+    tiles: [...chain.tiles, ...tiles],
+    morphemes: [...chain.morphemes, morpheme],
+    headSpan: chain.headSpan,
+    tailSpan: [tailStart, end],
+    natural: false,
+  };
+}
+
+export function newMorpheme(tiles: readonly Tile[], side: MorphemeSide, round: number, viaCard?: string): Morpheme {
+  return makeMorpheme(tiles, side, round, viaCard);
 }

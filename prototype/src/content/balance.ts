@@ -64,6 +64,10 @@ export interface Balance {
     bossModifierReroll: number;
     /** Sell held cards at this fraction of price. */
     sellFraction: number;
+    /** Held-card limit per type (Per Round Cards tab proposal). */
+    handLimits: Record<'sound_shift' | 'extension' | 'loanword' | 'utility', number>;
+    /** Slot 1 is forced to an Extension card when the player holds none (Shops tab proposal). */
+    guaranteeExtension: boolean;
   };
   economy: {
     roundClear: number;
@@ -116,6 +120,8 @@ export const defaultBalance: Balance = {
     tileModifier: 6,
     bossModifierReroll: 8,
     sellFraction: 0.5,
+    handLimits: { sound_shift: 3, extension: 3, loanword: 3, utility: 2 },
+    guaranteeExtension: true,
   },
   economy: {
     roundClear: 3,

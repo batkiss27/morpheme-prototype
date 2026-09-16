@@ -169,6 +169,19 @@ interface Chain {
 - Other extension cards are specified in `content/cards.ts` with an `apply`
   function in `engine/cards/extension.ts`; see §7.
 
+- **Reduplication / Free Morpheme:** no dictionary check; `tailSpan` = just the
+  new letters, so the next natural back step validates `newLetters + more`.
+- **Blend** searches overlaps from the longest (the whole tail word) down to
+  `minOverlap` (2) and takes the first dictionary hit; the shared letters stay
+  in their original morpheme and the new morpheme is the added letters only.
+- **Sound Shift cards** (Vowel Shift, Glide, Elision, Metathesis) edit tiles
+  already in the chain. A shifted tile keeps its base value and records the new
+  letter in `playedAs`; Elision moves the tile to `destroyed` and drops an
+  emptied morpheme. A shift may make the chain temporarily non-dictionary
+  (`chainDirty`): the next steps must restore validity, and `SUBMIT` is
+  rejected while either active word (head or tail span) is not in the
+  dictionary. Middle morphemes of a non-natural chain are never re-validated.
+
 The engine never decides *which* morphemes are linguistically real. The
 dictionary is the only judge of validity.
 
@@ -228,12 +241,16 @@ never a `setTimeout` inside the engine.
 ```
 
 **Actions in M1** (`engine/types.ts` `Action`): `START_ROUND`, `PLAY_STEP {side, tileIds, playedAs?, viaCard?}`,
-`UNDO_STEP`, `SUBMIT`, `FORFEIT` (give up the round: steps discarded, scores 0, fails), `CONTINUE`
-(leaves SCORED / BOSS_END), `LEAVE` (shop), and the boss stubs
+`UNDO_STEP`, `SUBMIT`, `FORFEIT` (give up the round: steps discarded, scores 0, fails),
+`USE_CARD {instanceId, target?}` (instant cards), `CONTINUE` (leaves SCORED / BOSS_END),
+the shop actions `BUY_CARD {slot}`, `BUY_TILE_ACTION {target}`, `REROLL`, `SELL {instanceId}`,
+`LEAVE`, and the boss stubs
 `START_BOSS`, `BOSS_TICK {ms}`, `END_BOSS {wordPoints?}`, `PICK_MODIFIER {id?}`. Rejected actions
 are still appended to `log` with an `error` and leave the rest of the state untouched, so an export
-replays exactly. `roundStart` snapshots the chain and hand at `START_ROUND`; `UNDO_STEP` replays
-all but the last step from it.
+replays exactly. Every `PLAY_STEP` pushes a `StepSnapshot` (chain, hand, pool, destroyed, cards,
+strain, dirty flag, round effects) onto `undo`; `UNDO_STEP` pops it, which also reverts any card
+used after that step. `FORFEIT` restores the first snapshot. Extension cards ride on
+`PLAY_STEP { viaCard: instanceId }` (back only, D5) and are consumed on success.
 
 **Invariants** (write tests for each):
 
@@ -435,6 +452,12 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | `FORFEIT` exists so a stuck player (no valid extension, no cards) can end the round: it discards the round's steps, returns the hand, scores 0 and fails the threshold (life or GAME_OVER). The UI asks for confirmation. | §5, §6 |
 | 2026-09-16 | `ROUND_START` has no screen: `ui/store.ts` dispatches `START_ROUND` immediately after any action that lands there, so the log still records the arrow. | §5, §6 |
 | 2026-09-16 | In round 1 the start word plus a further step in the same round counts as "2 morphemes, same side" for the extension bonus (the start morpheme is a back morpheme for bonus purposes). | §7 |
+| 2026-09-16 | Cards: `content/cards.ts` rows carry `effectId`; `engine/cards/registry.ts` validates every id at startup (store) and in tests. Step effects (extension) live in `cards/extension.ts`, instant ones in `cards/instant.ts` with a per-effect phase table. | §7 |
+| 2026-09-16 | Reduplication and Free Morpheme set `tailSpan` to the new letters; Blend takes the longest valid overlap ≥ 2; Hyphen has strain 2 via `params.strain`. Extension cards are back-only (D5 default kept). | §4 |
+| 2026-09-16 | Sound-shifted tiles keep their base value (`playedAs` changes the letter). Elision destroys the tile. `chainDirty` gates SUBMIT on head/tail validity. | §4 |
+| 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
+| 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
+| 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
 | 2026-09-16 | RoundScreen shows live candidate words for front/back with a ✓/✗ dictionary hint before the step is played; the engine still validates on `PLAY_STEP` and rejected steps show red with the attempted word. | §6 |
 
 ---
@@ -444,5 +467,6 @@ section, and update `DESIGN.md` if the product rule changed.
 | Date | Version | Change |
 |---|---|---|
 | 2026-09-16 | 0.1 | Initial spec drafted from DESIGN.md rev 3 and Morpheme_Master.xlsx. |
+| 2026-09-16 | 0.4 | M3 landed. §4: extension-card and Sound Shift chain semantics (dirty-chain rule). §5: USE_CARD and shop actions; undo snapshots. §7: card registry. Decision log: eight card/shop entries. |
 | 2026-09-16 | 0.3 | M2 landed. §5: `FORFEIT` action. §6: Start/Round/Score/Shop/End screens exist; boss phases use a stub screen until M4; ScoreScreen also serves BOSS_END. Decision log: forfeit, ROUND_START auto-advance, round-1 bonus rule, candidate-word hints. |
 | 2026-09-16 | 0.2 | M0/M1 landed. §3: `tests/` and `scripts/` live under `prototype/` (they need its toolchain). §5: listed the M1 action set and the log/undo mechanics. Decision log: first-word rule, life-loss flow, D1 default, rounding, morpheme ids. `EngineContent` = `{ balance, dictionary, letters }` is what the reducer receives. |

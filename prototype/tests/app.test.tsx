@@ -10,7 +10,7 @@ import type { RunState } from '../src/engine';
 import { App } from '../src/ui/App';
 import { BossStubScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
 import { setDictionary, startRun, getState } from '../src/ui/store';
-import { balanceWith } from './helpers';
+import { balanceWith, withCards } from './helpers';
 import { anyDict, makeContent, newRun, playFromHand, playRegularRound } from './run-driver';
 
 const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1 } }));
@@ -38,7 +38,9 @@ function states(): Record<string, RunState> {
   const bossReward = s;
   const forfeited = reduce(reduce(extendWithStep, { type: 'FORFEIT' }, easy), { type: 'CONTINUE' }, easy);
   const won = { ...bossReward, phase: 'WIN' as const };
-  return { extendEmpty, extendWithStep, rejected, scored, shop, bossIntro, bossPlay, bossEnd, bossReward, forfeited, won };
+  const carded = withCards(extendWithStep, 'before_and_after', 'glide', 'loanword', 'bank', 'amendment');
+  const shopWithCards = withCards({ ...shop, currency: 20 }, 'hyphen');
+  return { extendEmpty, extendWithStep, rejected, scored, shop, bossIntro, bossPlay, bossEnd, bossReward, forfeited, won, carded, shopWithCards };
 }
 
 describe('screens render', () => {
@@ -54,6 +56,9 @@ describe('screens render', () => {
     expect(withStep).toContain('Add to back');
     expect(withStep).toContain('Submit round');
     expect(renderToString(<RoundScreen run={st.rejected!} />)).toContain('Rejected');
+    const carded = renderToString(<RoundScreen run={st.carded!} />);
+    expect(carded).toContain('Before &amp; After');
+    expect(carded).toContain('card--blocked'); // Amendment is not usable in EXTEND
   });
   it('ScoreScreen', () => {
     const html = renderToString(<ScoreScreen run={st.scored!} />);
@@ -61,7 +66,11 @@ describe('screens render', () => {
     expect(html).toContain('To the shop');
   });
   it('ShopScreen', () => {
-    expect(renderToString(<ShopScreen run={st.shop!} />)).toContain('Leave');
+    const html = renderToString(<ShopScreen run={st.shop!} />);
+    expect(html).toContain('Leave');
+    expect(html).toContain('Reroll cards for');
+    expect(html).toContain('Tile action');
+    expect(renderToString(<ShopScreen run={st.shopWithCards!} />)).toContain('Sell for');
   });
   it('BossStubScreen for every boss phase', () => {
     expect(renderToString(<BossStubScreen run={st.bossIntro!} />)).toContain('Start boss');

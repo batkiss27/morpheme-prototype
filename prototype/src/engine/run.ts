@@ -4,23 +4,29 @@
  *
  *   ROUND_START ─START_ROUND─► EXTEND ─SUBMIT─► SCORED ─CONTINUE─► SHOP ─LEAVE─► ROUND_START
  *        │                        │ FORFEIT ─────► SCORED (score 0, always a fail)
- *        │                                        │ fail w/ life → ROUND_START (no shop)
+ *        │                        │ PLAY_STEP / UNDO_STEP / USE_CARD
+ *        │                                        │ fail w/ life or Insurance → ROUND_START (no shop)
  *        │ boss round                             │ fail w/o life → GAME_OVER
  *        ▼
  *   BOSS_INTRO ─START_BOSS─► BOSS_PLAY ─END_BOSS─► BOSS_END ─CONTINUE─► BOSS_REWARD ─PICK_MODIFIER─► ROUND_START / WIN
- *                                                     │ fail w/ life → ROUND_START (retry same boss, D1)
+ *        │ USE_CARD (Amendment)                       │ fail w/ life → ROUND_START (retry same boss, D1)
  *                                                     │ fail w/o life → GAME_OVER
+ *   SHOP: BUY_CARD · BUY_TILE_ACTION · REROLL · SELL · USE_CARD (Loanword) · LEAVE
  *
  * Boss phases are stubs until M4: END_BOSS takes the placed-word points as an
  * input (omitted = auto-pass at exactly the threshold).
  */
 
+import * as cards from './cards';
 import * as chainMod from './chain';
 import * as rng from './rng';
 import * as scoring from './scoring';
+import * as shopMod from './shop';
 import * as tiles from './tiles';
 import type {
   Action,
+  CardInstance,
+  CardTarget,
   Chain,
   EngineContent,
   PreRunLoadout,
@@ -28,6 +34,7 @@ import type {
   RunEvent,
   RunState,
   StepRecord,
+  StepSnapshot,
   Tile,
 } from './types';
 
@@ -48,8 +55,10 @@ export function createRun(seed: number, loadout: PreRunLoadout, content: EngineC
     currency: 0,
     pool: tiles.createPool({ letters: content.letters }, loadout),
     hand: [],
+    destroyed: [],
     chain: null,
     cards: [],
+    cardSeq: 0,
     inRun: [],
     preRun: loadout,
     streak: 0,
@@ -58,9 +67,11 @@ export function createRun(seed: number, loadout: PreRunLoadout, content: EngineC
     log: [],
     flags: {},
     steps: [],
-    roundStart: null,
+    undo: [],
     lastResult: null,
     strainThisRound: 0,
+    chainDirty: false,
+    roundEffects: {},
   };
 }
 
@@ -104,7 +115,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
   switch (action.type) {
     case 'START_ROUND': {
       if (state.phase !== 'ROUND_START') return wrong();
-      const base: RunState = { ...state, steps: [], strainThisRound: 0, shop: null };
+      const base: RunState = { ...state, steps: [], undo: [], strainThisRound: 0, roundEffects: {}, shop: null };
       if (scoring.isBossRound(state.round, balance)) {
         return ok({
           ...base,
@@ -113,47 +124,32 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         });
       }
       const d = tiles.draw(state.pool, balance.hand.size, state.rng);
-      return ok({
-        ...base,
-        phase: 'EXTEND',
-        pool: d.pool,
-        hand: d.drawn,
-        rng: d.rng,
-        roundStart: { chain: state.chain, hand: d.drawn },
-      });
+      return ok({ ...base, phase: 'EXTEND', pool: d.pool, hand: d.drawn, rng: d.rng });
     }
 
     case 'PLAY_STEP': {
       if (state.phase !== 'EXTEND') return wrong();
-      if (action.viaCard !== undefined) return fail('extension cards are not implemented yet (M3)');
-      const r = playStep(state, action, content);
+      const before = snapshot(state);
+      const r = action.viaCard === undefined ? playNaturalStep(state, action, content) : playCardStep(state, action, action.viaCard, content);
       if (!r.ok) return r;
-      return ok(r.state);
+      return ok({ ...r.state, undo: [...state.undo, before] });
     }
 
     case 'UNDO_STEP': {
       if (state.phase !== 'EXTEND') return wrong();
-      if (state.steps.length === 0 || !state.roundStart) return fail('nothing to undo');
-      // Re-apply every step but the last from the round's starting position.
-      let s: RunState = {
-        ...state,
-        chain: state.roundStart.chain,
-        hand: state.roundStart.hand,
-        steps: [],
-        strainThisRound: 0,
-      };
-      for (const step of state.steps.slice(0, -1)) {
-        const r = playStep(s, { type: 'PLAY_STEP', ...stepToAction(step) }, content);
-        if (!r.ok) return fail(`undo replay failed: ${r.error}`);
-        s = r.state;
-      }
-      return ok(s);
+      const before = state.undo[state.undo.length - 1];
+      if (!before) return fail('nothing to undo');
+      return ok({ ...state, ...before, steps: state.steps.slice(0, -1), undo: state.undo.slice(0, -1) });
     }
 
     case 'SUBMIT': {
       if (state.phase !== 'EXTEND') return wrong();
       if (state.steps.length === 0 || !state.chain) return fail('extend by at least one morpheme before submitting');
       const chain = state.chain;
+      if (state.chainDirty) {
+        const v = chainMod.activeWordsValid(chain, content.dictionary);
+        if (!v.ok) return fail(`after a Sound Shift the word must be valid again: "${v.word}" is not in the dictionary`);
+      }
       const shape = chainMod.morphemesAddedIn(chain, state.round);
       const breakdown = scoring.scoreRegular(
         {
@@ -167,55 +163,123 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         balance,
       );
       const natural = state.strainThisRound === 0;
-      const after = settle(state, breakdown, natural ? state.streak + 1 : 0, balance.economy.roundClear);
+      const earned = balance.economy.roundClear * (state.roundEffects.bank ? 2 : 1);
+      const after = settle(state, breakdown, natural ? state.streak + 1 : 0, earned);
       return ok({
         ...after,
         phase: 'SCORED',
         pool: tiles.returnTiles(state.pool, state.hand),
         hand: [],
-        roundStart: null,
+        undo: [],
+        chainDirty: false,
       });
     }
 
     case 'FORFEIT': {
-      if (state.phase !== 'EXTEND' || !state.roundStart) return wrong();
-      // Give up the round: this round's steps are discarded, the hand returns
-      // to the pool, and the round scores 0 (always a fail).
-      const chain = state.roundStart.chain;
+      if (state.phase !== 'EXTEND') return wrong();
+      // Give up the round: everything since the first step is undone, the
+      // hand returns to the pool, and the round scores 0 (always a fail).
+      const first = state.undo[0];
+      const reverted: RunState = first ? { ...state, ...first } : state;
       const breakdown = scoring.scoreRegular(
         {
           round: state.round,
           wordPoints: 0,
-          morphemes: chain ? chainMod.morphemeCount(chain) : 0,
+          morphemes: reverted.chain ? chainMod.morphemeCount(reverted.chain) : 0,
           strainCount: 0,
           extension: { front: 0, back: 0 },
           inRunMult: inRunMultiplier(state),
         },
         balance,
       );
-      const after = settle(state, breakdown, 0, 0);
+      const after = settle(reverted, breakdown, 0, 0);
       return ok({
         ...after,
         phase: 'SCORED',
-        chain,
-        pool: tiles.returnTiles(state.pool, state.roundStart.hand),
+        pool: tiles.returnTiles(reverted.pool, reverted.hand),
         hand: [],
         steps: [],
-        roundStart: null,
+        undo: [],
       });
     }
+
+    case 'USE_CARD':
+      return useCard(state, action.instanceId, action.target ?? {}, content);
 
     case 'CONTINUE': {
       if (state.phase !== 'SCORED' && state.phase !== 'BOSS_END') return wrong();
       const result = state.lastResult;
       if (!result) return fail('no round result to continue from');
       if (result.outcome === 'game_over') return ok({ ...state, phase: 'GAME_OVER' });
-      if (result.outcome === 'life_lost') {
+      if (result.outcome === 'life_lost' || result.outcome === 'insured') {
         // Regular: move on without a shop. Boss: retry the same boss (D1).
         return ok(state.phase === 'SCORED' ? advanceRound(state, balance) : { ...state, phase: 'ROUND_START', boss: null });
       }
       if (state.phase === 'BOSS_END') return ok({ ...state, phase: 'BOSS_REWARD' });
-      return ok({ ...state, phase: 'SHOP', shop: { rerolls: 0 } });
+      const built = shopMod.buildShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content) });
+      return ok({ ...state, phase: 'SHOP', shop: built.shop, rng: built.rng });
+    }
+
+    // --- Shop -----------------------------------------------------------------
+
+    case 'BUY_CARD': {
+      if (state.phase !== 'SHOP' || !state.shop) return wrong();
+      const offer = state.shop.offers[action.slot];
+      if (!offer) return fail(`no offer in slot ${action.slot}`);
+      if (offer.sold) return fail('that slot is sold out');
+      const spec = cards.cardSpec(content, offer.cardId);
+      if (!spec) return fail(`unknown card ${offer.cardId}`);
+      if (state.currency < offer.price) return fail(`not enough currency (${offer.price} needed)`);
+      const limit = balance.shop.handLimits[spec.type];
+      if (cards.countByType(state.cards, content)[spec.type] >= limit) return fail(`you can hold at most ${limit} ${spec.type} cards`);
+      const instance: CardInstance = { instanceId: `c${state.cardSeq}`, cardId: spec.id };
+      const offers = state.shop.offers.map((o, i) => (i === action.slot ? { ...o, sold: true } : o));
+      return ok({
+        ...state,
+        currency: state.currency - offer.price,
+        cards: [...state.cards, instance],
+        cardSeq: state.cardSeq + 1,
+        shop: { ...state.shop, offers },
+      });
+    }
+
+    case 'BUY_TILE_ACTION': {
+      if (state.phase !== 'SHOP' || !state.shop) return wrong();
+      const offer = state.shop.tileAction;
+      if (offer.sold) return fail('the tile action is sold out');
+      if (state.currency < offer.price) return fail(`not enough currency (${offer.price} needed)`);
+      let pool: Tile[];
+      let destroyed = state.destroyed;
+      if (offer.kind === 'add_tile') {
+        const letter = action.target.letter;
+        const spec = letter && content.letters.find((l) => l.letter === letter);
+        if (!spec) return fail('choose a letter to add');
+        const serial = state.pool.length + state.hand.length + (state.chain?.tiles.length ?? 0) + state.destroyed.length + 1;
+        pool = [...state.pool, { id: `${letter}+${serial}`, letter: spec.letter, baseValue: spec.value, modifiers: [] }];
+      } else {
+        const tile = state.pool.find((t) => t.id === action.target.tileId);
+        if (!tile) return fail('choose a tile in the pool to remove');
+        pool = state.pool.filter((t) => t.id !== tile.id);
+        destroyed = [...state.destroyed, tile];
+      }
+      return ok({ ...state, pool, destroyed, currency: state.currency - offer.price, shop: { ...state.shop, tileAction: { ...offer, sold: true } } });
+    }
+
+    case 'REROLL': {
+      if (state.phase !== 'SHOP' || !state.shop) return wrong();
+      const price = state.shop.rerollPrice;
+      if (state.currency < price) return fail(`not enough currency (${price} needed)`);
+      const built = shopMod.rerollShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), previous: state.shop });
+      return ok({ ...state, currency: state.currency - price, shop: built.shop, rng: built.rng });
+    }
+
+    case 'SELL': {
+      if (state.phase !== 'SHOP') return wrong();
+      const held = state.cards.find((c) => c.instanceId === action.instanceId);
+      if (!held) return fail('that card is not in your hand');
+      const spec = cards.cardSpec(content, held.cardId);
+      if (!spec) return fail(`unknown card ${held.cardId}`);
+      return ok({ ...state, currency: state.currency + shopMod.sellPrice(spec, balance), cards: state.cards.filter((c) => c !== held) });
     }
 
     case 'LEAVE': {
@@ -263,22 +327,26 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Steps
 // ---------------------------------------------------------------------------
 
-function stepToAction(step: StepRecord): Omit<Extract<Action, { type: 'PLAY_STEP' }>, 'type'> {
-  const a: Omit<Extract<Action, { type: 'PLAY_STEP' }>, 'type'> = { side: step.side, tileIds: step.tileIds };
-  if (step.playedAs) a.playedAs = step.playedAs;
-  if (step.viaCard !== undefined) a.viaCard = step.viaCard;
-  return a;
+function snapshot(state: RunState): StepSnapshot {
+  return {
+    chain: state.chain,
+    hand: state.hand,
+    pool: state.pool,
+    destroyed: state.destroyed,
+    cards: state.cards,
+    strainThisRound: state.strainThisRound,
+    chainDirty: state.chainDirty,
+    roundEffects: state.roundEffects,
+  };
 }
 
+type PlayStepAction = Extract<Action, { type: 'PLAY_STEP' }>;
+
 /** One natural step: commit tiles from the hand, validate, record. */
-function playStep(
-  state: RunState,
-  action: Extract<Action, { type: 'PLAY_STEP' }>,
-  content: EngineContent,
-): Step {
+function playNaturalStep(state: RunState, action: PlayStepAction, content: EngineContent): Step {
   const committed = tiles.commit(state.hand, action.tileIds, action.playedAs);
   if ('error' in committed) return fail(committed.error);
 
@@ -307,16 +375,66 @@ function playStep(
   return ok({ ...state, chain: next, hand: committed.hand, steps: [...state.steps, record] });
 }
 
+/** A step made by an Extension card: back only (D5); the card is consumed and applies strain. */
+function playCardStep(state: RunState, action: PlayStepAction, instanceId: string, content: EngineContent): Step {
+  const held = state.cards.find((c) => c.instanceId === instanceId);
+  if (!held) return fail('that card is not in your hand');
+  const spec = cards.cardSpec(content, held.cardId);
+  if (!spec) return fail(`unknown card ${held.cardId}`);
+  const effect = cards.stepEffects[spec.effectId as keyof typeof cards.stepEffects];
+  if (!effect) return fail(`${spec.name} is not an extension card`);
+  if (!state.chain) return fail('play a first word before using an extension card');
+  if (action.side !== 'back') return fail('extension cards extend the back of the word (D5)');
+
+  const committed = tiles.commit(state.hand, action.tileIds, action.playedAs);
+  if ('error' in committed) return fail(committed.error);
+  const r = effect(state.chain, committed.committed, content.dictionary, state.round, spec);
+  if (!r.ok) return fail(`${spec.name}: ${r.error}`);
+
+  const record: StepRecord = { side: 'back', tileIds: action.tileIds, word: chainMod.tailText(r.value), viaCard: spec.id };
+  if (action.playedAs) record.playedAs = action.playedAs;
+  return ok({
+    ...state,
+    chain: r.value,
+    hand: committed.hand,
+    steps: [...state.steps, record],
+    cards: state.cards.filter((c) => c !== held),
+    strainThisRound: state.strainThisRound + Number(spec.params.strain ?? 1),
+  });
+}
+
+/** An instant card (Sound Shift, Loanword, Utility, Echo): apply and consume. */
+function useCard(state: RunState, instanceId: string, target: CardTarget, content: EngineContent): Step {
+  const held = state.cards.find((c) => c.instanceId === instanceId);
+  if (!held) return fail('that card is not in your hand');
+  const spec = cards.cardSpec(content, held.cardId);
+  if (!spec) return fail(`unknown card ${held.cardId}`);
+  if (cards.usage(spec) === 'step') return fail(`${spec.name} is used by adding tiles to the back of the word`);
+  if (!cards.usableIn(spec, state.phase)) return fail(`${spec.name} cannot be used in phase ${state.phase}`);
+  const effect = cards.instantEffects[spec.effectId as keyof typeof cards.instantEffects];
+  const r = effect({ state, card: spec, target, content });
+  if (!r.ok) return fail(`${spec.name}: ${r.error}`);
+  const remaining = (r.patch.cards ?? state.cards).filter((c) => c !== held);
+  return ok({ ...state, ...r.patch, cards: remaining });
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function heldTypes(state: RunState, content: EngineContent) {
+  return state.cards.map((c) => cards.cardSpec(content, c.cardId)?.type).filter((t): t is NonNullable<typeof t> => !!t);
+}
+
 /** Apply pass/fail consequences: lives, currency, streak, lastResult. */
-function settle(
-  state: RunState,
-  breakdown: scoring.ScoreBreakdown,
-  streakIfPassed: number,
-  currencyIfPassed: number,
-): RunState {
+function settle(state: RunState, breakdown: scoring.ScoreBreakdown, streakIfPassed: number, currencyIfPassed: number): RunState {
   if (breakdown.passed) {
     const result: RoundResult = { ...breakdown, outcome: 'pass', currencyEarned: currencyIfPassed };
     return { ...state, lastResult: result, streak: streakIfPassed, currency: state.currency + currencyIfPassed };
+  }
+  if (state.roundEffects.insurance) {
+    const result: RoundResult = { ...breakdown, outcome: 'insured', currencyEarned: 0 };
+    return { ...state, lastResult: result, streak: 0 };
   }
   if (state.lives > 0) {
     const result: RoundResult = { ...breakdown, outcome: 'life_lost', currencyEarned: 0 };
@@ -334,5 +452,5 @@ function advanceRound(state: RunState, balance: EngineContent['balance']): RunSt
 
 /** All tiles the run owns, wherever they are (for the conservation invariant). */
 export function allTiles(state: RunState): Tile[] {
-  return [...state.pool, ...state.hand, ...(state.chain?.tiles ?? [])];
+  return [...state.pool, ...state.hand, ...(state.chain?.tiles ?? []), ...state.destroyed];
 }

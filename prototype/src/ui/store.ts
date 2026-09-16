@@ -4,9 +4,14 @@
  */
 
 import { useSyncExternalStore } from 'react';
-import { createRun, dictionary as dictFns, reduce, defaultLoadout, rng as rngFns } from '../engine';
-import type { Action, Balance, Dictionary, EngineContent, PreRunLoadout, RunState } from '../engine';
-import { defaultBalance, letters } from '../content';
+import { createRun, dictionary as dictFns, lastError, reduce, defaultLoadout, rng as rngFns } from '../engine';
+import { playCue } from './audio';
+import type { Action, Balance, CardSpec, Dictionary, EngineContent, PreRunLoadout, RunState } from '../engine';
+import { cards, defaultBalance, letters } from '../content';
+import { validateCards } from '../engine/cards';
+
+// Startup check: every card names an implemented effect (P3-01).
+validateCards(cards);
 
 export type DictionaryStatus =
   | { state: 'loading' }
@@ -81,7 +86,7 @@ async function fetchText(url: string): Promise<string> {
 
 export function content(): EngineContent {
   if (state.dictionary.state !== 'ready') throw new Error('dictionary not loaded');
-  return { balance: state.balance, dictionary: state.dictionary.dictionary, letters };
+  return { balance: state.balance, dictionary: state.dictionary.dictionary, letters, cards };
 }
 
 /**
@@ -104,7 +109,27 @@ export function startRun(seed: number, loadout: PreRunLoadout = defaultLoadout):
 
 export function dispatch(action: Action): void {
   if (!state.run) throw new Error('no run in progress');
-  setState({ run: autoAdvance(reduce(state.run, action, content())) });
+  const before = state.run;
+  const after = reduce(before, action, content());
+  const cue = cueFor(before, action);
+  if (cue && !lastError(after)) playCue(cue.cueId, cue.rarity);
+  setState({ run: autoAdvance(after) });
+}
+
+/** The card whose cue should play if this action succeeds (bought or used). */
+function cueFor(run: RunState, action: Action): CardSpec | undefined {
+  const spec = (cardId: string | undefined) => cards.find((c) => c.id === cardId);
+  const held = (instanceId: string) => spec(run.cards.find((c) => c.instanceId === instanceId)?.cardId);
+  switch (action.type) {
+    case 'USE_CARD':
+      return held(action.instanceId);
+    case 'PLAY_STEP':
+      return action.viaCard ? held(action.viaCard) : undefined;
+    case 'BUY_CARD':
+      return spec(run.shop?.offers[action.slot]?.cardId);
+    default:
+      return undefined;
+  }
 }
 
 /** Back to the start screen. */

@@ -78,6 +78,7 @@ export function ScoreScreen({ run }: { run: RunState }) {
         {r.outcome === 'life_lost' && (
           <p style={{ color: 'var(--warn)' }}>A life absorbed the miss. No shop this round; the word keeps its extension.</p>
         )}
+        {r.outcome === 'insured' && <p style={{ color: 'var(--warn)' }}>Insurance paid out: no life lost. No shop this round.</p>}
         {r.outcome === 'game_over' && <p style={{ color: 'var(--danger)' }}>No lives left. The run is over.</p>}
       </div>
 
@@ -87,7 +88,7 @@ export function ScoreScreen({ run }: { run: RunState }) {
       </div>
 
       <button type="button" className="btn--primary" onClick={() => dispatch({ type: 'CONTINUE' })}>
-        {r.outcome === 'pass' ? (boss ? 'Choose reward' : 'To the shop') : r.outcome === 'life_lost' ? 'Next round' : 'End run'}
+        {r.outcome === 'pass' ? (boss ? 'Choose reward' : 'To the shop') : r.outcome === 'game_over' ? 'End run' : 'Next round'}
       </button>
     </div>
   );

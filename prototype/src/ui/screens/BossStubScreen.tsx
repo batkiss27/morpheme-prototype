@@ -1,5 +1,5 @@
 import type { RunState } from '../../engine';
-import { ChainView, RunHeader } from '../components';
+import { CardPanel, ChainView, RunHeader } from '../components';
 import { dispatch } from '../store';
 import { ScoreScreen } from './ScoreScreen';
 
@@ -32,6 +32,7 @@ export function BossStubScreen({ run }: { run: RunState }) {
               </button>
             </>
           )}
+          {run.phase === 'BOSS_INTRO' && run.flags.amendmentUsed && <span className="badge">Amendment used (modifier reroll arrives in M4)</span>}
           {run.phase === 'BOSS_REWARD' && (
             <button type="button" className="btn--primary" onClick={() => dispatch({ type: 'PICK_MODIFIER' })}>
               Skip reward (M5) → round {run.round + 1}
@@ -39,6 +40,13 @@ export function BossStubScreen({ run }: { run: RunState }) {
           )}
         </div>
       </div>
+      {run.phase === 'BOSS_INTRO' && (
+        <CardPanel
+          run={run}
+          hint="Cards usable before the boss starts (Amendment rerolls the modifier)."
+          onCardClick={(inst) => dispatch({ type: 'USE_CARD', instanceId: inst.instanceId })}
+        />
+      )}
     </div>
   );
 }

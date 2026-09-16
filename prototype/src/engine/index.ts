@@ -9,5 +9,7 @@ export * as dictionary from './dictionary';
 export * as tiles from './tiles';
 export * as chain from './chain';
 export * as scoring from './scoring';
+export * as shop from './shop';
+export * as cards from './cards';
 export { createRun, reduce, defaultLoadout, lastError, allTiles, inRunMultiplier } from './run';
 export * from './export';

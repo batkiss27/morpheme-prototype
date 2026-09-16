@@ -201,3 +201,20 @@ input {
 .breakdown tr.total td { font-weight: 700; font-size: 18px; border-top: 2px solid var(--muted); }
 .big { font-size: 28px; font-weight: 700; }
 select { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--muted); border-radius: var(--radius); padding: 4px; }
+
+/* --- Cards (M3) ------------------------------------------------------------ */
+.card--armed { background: var(--accent-2); color: var(--tile-text); }
+.card--armed .card__badge { color: var(--tile-text); }
+.card--blocked { opacity: 0.4; }
+.card__price { color: var(--warn); }
+.card--armed .card__price { color: var(--tile-text); }
+.quadrants { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.quadrant { background: var(--bg); border-radius: var(--radius); padding: 8px; min-height: 100px; }
+.quadrant__title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.quadrant__cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.chain--targeting .tile { cursor: crosshair; box-shadow: 0 0 0 2px var(--accent-2); }
+.chain__tile--dim .tile { opacity: 0.35; box-shadow: none; cursor: default; }
+.armed-note { padding: 8px 12px; border: 1px solid var(--accent-2); border-radius: var(--radius); margin-bottom: 12px; }
+.shop-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.shop-slot { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.shop-slot__text { max-width: 200px; font-size: 12px; color: var(--muted); }

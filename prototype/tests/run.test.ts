@@ -35,7 +35,6 @@ describe('ROUND_START → EXTEND', () => {
     expect(s.phase).toBe('EXTEND');
     expect(s.hand).toHaveLength(defaultBalance.hand.size);
     expect(s.pool).toHaveLength(100 - defaultBalance.hand.size);
-    expect(s.roundStart?.hand).toEqual(s.hand);
     expect(s.log).toHaveLength(1);
   });
 
@@ -55,7 +54,7 @@ describe('EXTEND', () => {
   function withHand(word: string): RunState {
     const s = start(newRun(real));
     const hand = tilesFor(word, 'h');
-    return { ...s, pool: [], hand, roundStart: { chain: null, hand } };
+    return { ...s, pool: [], hand };
   }
 
   it('the first PLAY_STEP creates the chain', () => {
@@ -91,9 +90,9 @@ describe('EXTEND', () => {
     expect(lastError(s)).toContain('nope');
   });
 
-  it('extension cards are not implemented yet', () => {
-    const s = reduce(withHand('bear'), { type: 'PLAY_STEP', side: 'start', tileIds: ['hB0', 'hE1', 'hA2', 'hR3'], viaCard: 'hyphen' }, real);
-    expect(lastError(s)).toMatch(/M3/);
+  it('a step via a card the player does not hold is rejected', () => {
+    const s = reduce(withHand('bear'), { type: 'PLAY_STEP', side: 'start', tileIds: ['hB0', 'hE1', 'hA2', 'hR3'], viaCard: 'c99' }, real);
+    expect(lastError(s)).toMatch(/not in your hand/);
   });
 
   it('UNDO_STEP restores the previous chain and hand', () => {

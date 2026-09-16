@@ -5,7 +5,7 @@ interface Props {
   tile: TileModel;
   committed?: boolean;
   selected?: boolean;
-  onClick?: () => void;
+  onClick?: (() => void) | undefined;
 }
 
 /** 44×44 box with the letter and a small value subscript (spec §6). */

@@ -1,5 +1,5 @@
 /** Helpers to drive the run reducer in tests. */
-import { defaultBalance, letters } from '../src/content';
+import { cards, defaultBalance, letters } from '../src/content';
 import { createRun, defaultLoadout, reduce, tiles as T } from '../src/engine';
 import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState } from '../src/engine';
 
@@ -7,7 +7,7 @@ import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState
 export const anyDict: Dictionary = { has: (w) => w.length >= 2, size: Number.POSITIVE_INFINITY };
 
 export function makeContent(dictionary: Dictionary = anyDict, balance: Balance = defaultBalance): EngineContent {
-  return { balance, dictionary, letters };
+  return { balance, dictionary, letters, cards };
 }
 
 export function newRun(content: EngineContent, seed = 1, loadout = defaultLoadout): RunState {

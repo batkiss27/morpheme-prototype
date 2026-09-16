@@ -1,0 +1,91 @@
+[
+  {
+    "name": "before-and-after: tail morpheme starts a new word, all morphemes kept",
+    "dictionary": ["bear", "bearable", "unbearable", "ableism"],
+    "chain": ["un", "bear", "able"],
+    "card": "before_and_after",
+    "letters": "ism",
+    "expect": { "ok": true, "morphemeCount": 4, "natural": false, "text": "unbearableism", "tailText": "ableism", "headText": "unbearable", "strain": 1 }
+  },
+  {
+    "name": "before-and-after: informally + ric → lyric (Scoring tab round 6)",
+    "dictionary": ["lyric"],
+    "chain": ["in", "form", "al", "ly"],
+    "card": "before_and_after",
+    "letters": "ric",
+    "expect": { "ok": true, "morphemeCount": 5, "natural": false, "text": "informallyric", "tailText": "lyric" }
+  },
+  {
+    "name": "before-and-after: rejected when tail morpheme + letters is not a word",
+    "dictionary": ["bear", "bearable"],
+    "chain": ["bear", "able"],
+    "card": "before_and_after",
+    "letters": "zz",
+    "expect": { "ok": false, "word": "ablezz" }
+  },
+  {
+    "name": "natural extension after a chain step applies to the tail word only",
+    "dictionary": ["lyric", "lyrical"],
+    "chain": ["in", "form", "al", "ly"],
+    "card": "before_and_after",
+    "letters": "ric",
+    "then": { "side": "back", "letters": "al" },
+    "expect": { "ok": true, "morphemeCount": 6, "natural": false, "text": "informallyrical", "tailText": "lyrical", "headText": "informally" }
+  },
+  {
+    "name": "reduplication: repeats the tail morpheme, no dictionary check",
+    "dictionary": [],
+    "chain": ["bye"],
+    "card": "reduplication",
+    "letters": "bye",
+    "expect": { "ok": true, "morphemeCount": 2, "natural": false, "text": "byebye", "tailText": "bye" }
+  },
+  {
+    "name": "reduplication: letters must match the tail morpheme",
+    "dictionary": [],
+    "chain": ["bye"],
+    "card": "reduplication",
+    "letters": "byes",
+    "expect": { "ok": false, "word": "byes" }
+  },
+  {
+    "name": "hyphen: any dictionary word, no overlap, double strain",
+    "dictionary": ["word"],
+    "chain": ["un", "bear", "able"],
+    "card": "hyphen",
+    "letters": "word",
+    "expect": { "ok": true, "morphemeCount": 4, "natural": false, "text": "unbearableword", "tailText": "word", "strain": 2 }
+  },
+  {
+    "name": "hyphen: the appended letters must be a word",
+    "dictionary": ["word"],
+    "chain": ["un", "bear", "able"],
+    "card": "hyphen",
+    "letters": "wrod",
+    "expect": { "ok": false, "word": "wrod" }
+  },
+  {
+    "name": "blend: overlaps tail letters, longest valid overlap wins (Scoring tab round 13)",
+    "dictionary": ["ticket"],
+    "chain": ["lymph", "atic"],
+    "card": "blend",
+    "letters": "ket",
+    "expect": { "ok": true, "morphemeCount": 3, "natural": false, "text": "lymphaticket", "tailText": "ticket" }
+  },
+  {
+    "name": "blend: needs at least minOverlap letters of overlap",
+    "dictionary": ["cat"],
+    "chain": ["lymph", "atic"],
+    "card": "blend",
+    "letters": "at",
+    "expect": { "ok": false }
+  },
+  {
+    "name": "free morpheme: anything goes",
+    "dictionary": [],
+    "chain": ["bear"],
+    "card": "free_morpheme",
+    "letters": "qzx",
+    "expect": { "ok": true, "morphemeCount": 2, "natural": false, "text": "bearqzx", "tailText": "qzx" }
+  }
+]
