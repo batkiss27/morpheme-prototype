@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cards as cardFns, chain as C, inRunMultiplier, lastError, scoring, tiles as T } from '../../engine';
+import { cards as cardFns, chain as C, lastError, scoring, scoringInputs, tiles as T } from '../../engine';
 import type { CardInstance, CardSpec, Dictionary, Letter, RunState, Side, Tile as TileModel } from '../../engine';
 import { CardPanel, ChainView, RunHeader, Tile } from '../components';
 import { content, dispatch, useStore } from '../store';
@@ -112,16 +112,19 @@ export function RoundScreen({ run }: { run: RunState }) {
   const stepError = error && (lastAction?.type === 'PLAY_STEP' || lastAction?.type === 'USE_CARD' || lastAction?.type === 'SUBMIT') ? error : undefined;
 
   const threshold = scoring.threshold(run.round, balance);
+  const inputs = run.chain && run.steps.length > 0 ? scoringInputs(run, engineContent) : null;
   const preview =
-    run.chain && run.steps.length > 0
+    inputs && run.chain
       ? scoring.scoreRegular(
           {
             round: run.round,
-            wordPoints: scoring.wordPoints(run.chain),
+            wordPoints: inputs.wordPoints,
             morphemes: C.morphemeCount(run.chain),
             strainCount: run.strainThisRound,
-            extension: C.morphemesAddedIn(run.chain, run.round),
-            inRunMult: inRunMultiplier(run),
+            extension: inputs.shape,
+            inRunMult: inputs.inRunMult,
+            multiplierBase: inputs.base,
+            extensionBonusMult: inputs.extensionBonusMult,
           },
           balance,
         )
@@ -305,6 +308,7 @@ export function RoundScreen({ run }: { run: RunState }) {
                 <p className="muted">
                   {preview.wordPoints} pts × {preview.morphemeMult.toFixed(2)} (m={preview.effectiveMorphemes}) × {preview.extensionBonus} ext × {preview.inRunMult} in-run
                 </p>
+                {inputs && inputs.notes.length > 0 && <p className="muted">{inputs.notes.join(' · ')}</p>}
               </>
             ) : (
               <p className="muted">Threshold {threshold.toLocaleString()}.</p>

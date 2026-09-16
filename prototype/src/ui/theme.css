@@ -252,3 +252,21 @@ kbd { background: var(--panel-alt); border-radius: 3px; padding: 0 4px; font-siz
 .transition__text { font-size: 64px; font-weight: 800; letter-spacing: 0.2em; color: var(--warn); animation: transition-zoom 1s ease-out; }
 @keyframes transition-fade { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes transition-zoom { from { transform: scale(0.7); } to { transform: scale(1.1); } }
+
+/* --- Rewards & modifiers (M5) --------------------------------------------- */
+.offers { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.offer {
+  display: flex; flex-direction: column; gap: 4px; width: 220px; text-align: left; padding: 10px 12px;
+  background: var(--panel-alt); border: 2px solid var(--r-basic); border-radius: var(--radius); color: var(--text);
+}
+.offer--uncommon { border-color: var(--r-uncommon); }
+.offer--exotic { border-color: var(--r-exotic); }
+.offer--relic { border-color: var(--r-relic); }
+.offer--static { cursor: default; }
+.offer:hover:not(.offer--static) { filter: brightness(1.15); }
+.offer__name { font-weight: 700; font-size: 15px; }
+.offer__meta { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.offer__text { font-size: 12px; }
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(15, 42, 58, 0.85); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.overlay__box { background: var(--panel); border-radius: var(--radius); padding: 16px 20px; max-width: 560px; width: 100%; max-height: 80vh; overflow: auto; }
+.overlay__box ul { margin: 0 0 8px; padding-left: 18px; }

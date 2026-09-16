@@ -1,2 +1,3 @@
-/** Modifier hooks and registry — implemented in M5 (P5-01). */
-export {};
+/** In-run modifier hooks and registry (M5). */
+export * from './hooks';
+export * from './registry';

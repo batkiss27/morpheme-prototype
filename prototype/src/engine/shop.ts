@@ -85,7 +85,7 @@ export function rerollPrice(rerolls: number, balance: Balance): number {
 export function buildShop(input: BuildShopInput): { shop: ShopState; rng: RngState } {
   const built = buildOffers(input);
   const [tileAction, s] = rollTileAction(built.rng, input.balance);
-  return { shop: { offers: built.offers, tileAction, rerolls: 0, rerollPrice: rerollPrice(0, input.balance) }, rng: s };
+  return { shop: { offers: built.offers, tileAction, inRunOffer: null, rerolls: 0, rerollPrice: rerollPrice(0, input.balance) }, rng: s };
 }
 
 /** The same shop with new card offers (tile action stays). */

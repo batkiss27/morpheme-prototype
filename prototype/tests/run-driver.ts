@@ -1,5 +1,5 @@
 /** Helpers to drive the run reducer in tests. */
-import { bossModifiers, cards, defaultBalance, letters } from '../src/content';
+import { bossModifiers, cards, defaultBalance, inRunModifiers, letters, secretWords } from '../src/content';
 import { createRun, defaultLoadout, reduce, tiles as T } from '../src/engine';
 import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState } from '../src/engine';
 
@@ -7,7 +7,7 @@ import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState
 export const anyDict: Dictionary = { has: (w) => w.length >= 2, size: Number.POSITIVE_INFINITY };
 
 export function makeContent(dictionary: Dictionary = anyDict, balance: Balance = defaultBalance): EngineContent {
-  return { balance, dictionary, letters, cards, bossModifiers };
+  return { balance, dictionary, letters, cards, bossModifiers, inRunModifiers, secretWords };
 }
 
 export function newRun(content: EngineContent, seed = 1, loadout = defaultLoadout): RunState {
@@ -40,6 +40,9 @@ export function playBossRound(state: RunState, content: EngineContent, wordPoint
   s = reduce(s, { type: 'START_BOSS' }, content);
   s = reduce(s, { type: 'END_BOSS', wordPoints }, content);
   s = reduce(s, { type: 'CONTINUE' }, content);
-  if (s.phase === 'BOSS_REWARD') s = reduce(s, { type: 'PICK_MODIFIER' }, content);
+  while (s.phase === 'BOSS_REWARD') {
+    const id = s.boss?.reward?.offers[0];
+    s = reduce(s, id ? { type: 'PICK_MODIFIER', id } : { type: 'PICK_MODIFIER' }, content);
+  }
   return s;
 }

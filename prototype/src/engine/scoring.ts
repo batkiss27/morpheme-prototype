@@ -9,7 +9,7 @@
  * Every function takes `balance` as an argument; nothing here imports content.
  */
 
-import { tileValue } from './tiles';
+import { tileLetter, tileValue } from './tiles';
 import type { Balance, Chain, RoundResult } from './types';
 
 // ---------------------------------------------------------------------------
@@ -45,13 +45,56 @@ export function wordPoints(chain: Chain): number {
   return chain.tiles.reduce((sum, t) => sum + tileValue(t), 0);
 }
 
+/** What a per-morpheme scoring hook can look at. */
+export interface MorphemeInfo {
+  index: number;
+  count: number;
+  text: string;
+  /** The rest of the chain's text without this morpheme. */
+  restText: string;
+  isHead: boolean;
+  isTail: boolean;
+  addedThisRound: boolean;
+}
+
+export interface MorphemePoints {
+  text: string;
+  base: number;
+  mult: number;
+  points: number;
+}
+
+/**
+ * Word points with a per-morpheme multiplier (in-run modifiers). With the
+ * identity multiplier this equals `wordPoints(chain)`.
+ */
+export function wordPointsBy(chain: Chain, round: number, mult: (info: MorphemeInfo) => number): { total: number; perMorpheme: MorphemePoints[] } {
+  const byId = new Map(chain.tiles.map((t) => [t.id, t]));
+  const texts = chain.morphemes.map((m) => m.tileIds.map((id) => tileLetter(byId.get(id)!)).join('').toLowerCase());
+  const perMorpheme = chain.morphemes.map((m, i) => {
+    const base = m.tileIds.reduce((sum, id) => sum + tileValue(byId.get(id)!), 0);
+    const info: MorphemeInfo = {
+      index: i,
+      count: chain.morphemes.length,
+      text: texts[i]!,
+      restText: texts.filter((_, k) => k !== i).join(''),
+      isHead: i === 0,
+      isTail: i === chain.morphemes.length - 1,
+      addedThisRound: m.round === round,
+    };
+    const k = mult(info);
+    return { text: info.text, base, mult: k, points: base * k };
+  });
+  return { total: perMorpheme.reduce((s, p) => s + p.points, 0), perMorpheme };
+}
+
 /** Morpheme count minus strain for the round; never below 1. */
 export function effectiveMorphemes(morphemes: number, strainCount: number, balance: Balance): number {
   return Math.max(1, morphemes - strainCount * balance.scoring.strain);
 }
 
-export function morphemeMultiplier(effectiveMorphemes: number, balance: Balance): number {
-  return Math.pow(balance.scoring.multiplierBase, effectiveMorphemes - 1);
+export function morphemeMultiplier(effectiveMorphemes: number, balance: Balance, base = balance.scoring.multiplierBase): number {
+  return Math.pow(base, effectiveMorphemes - 1);
 }
 
 export interface ExtensionShape {
@@ -97,14 +140,18 @@ export interface RegularScoreInput {
   inRunMult: number;
   /** Flat bonuses added after multiplication (hook). */
   flatBonus?: number;
+  /** Morpheme-multiplier base after in-run modifiers (default: balance). */
+  multiplierBase?: number;
+  /** Multiplier applied to the extension bonus (Mirror). */
+  extensionBonusMult?: number;
 }
 
-export type ScoreBreakdown = Omit<RoundResult, 'outcome' | 'currencyEarned'>;
+export type ScoreBreakdown = Omit<RoundResult, 'outcome' | 'currencyEarned' | 'currencySources' | 'notes' | 'criteriaMet'>;
 
 export function scoreRegular(input: RegularScoreInput, balance: Balance): ScoreBreakdown {
   const effM = effectiveMorphemes(input.morphemes, input.strainCount, balance);
-  const morphemeMult = morphemeMultiplier(effM, balance);
-  const extBonus = extensionBonus(input.extension, balance);
+  const morphemeMult = morphemeMultiplier(effM, balance, input.multiplierBase);
+  const extBonus = extensionBonus(input.extension, balance) * (input.extensionBonusMult ?? 1);
   const flat = input.flatBonus ?? 0;
   const score = roundHalfUp(input.wordPoints * morphemeMult * extBonus * input.inRunMult) + flat;
   const t = threshold(input.round, balance);
@@ -131,11 +178,12 @@ export interface BossScoreInput {
   morphemes: number;
   inRunMult: number;
   flatBonus?: number;
+  multiplierBase?: number;
 }
 
 export function scoreBoss(input: BossScoreInput, balance: Balance): ScoreBreakdown {
   const effM = effectiveMorphemes(input.morphemes, 0, balance);
-  const morphemeMult = morphemeMultiplier(effM, balance);
+  const morphemeMult = morphemeMultiplier(effM, balance, input.multiplierBase);
   const flat = input.flatBonus ?? 0;
   const score = roundHalfUp(input.bossWordPoints * morphemeMult * input.inRunMult) + flat;
   const t = threshold(input.round, balance);

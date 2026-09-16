@@ -131,7 +131,8 @@ describe('EXTEND → SCORED → SHOP → ROUND_START', () => {
     expect(r?.threshold).toBe(4);
     expect(r?.outcome).toBe(r?.passed ? 'pass' : 'game_over');
     if (r?.passed) {
-      expect(s.currency).toBe(defaultBalance.economy.roundClear);
+      expect(r.currencySources[0]).toEqual({ source: 'Round clear', amount: defaultBalance.economy.roundClear });
+      expect(s.currency).toBe(r.currencyEarned);
       expect(s.streak).toBe(1);
       s = reduce(s, { type: 'CONTINUE' }, content);
       expect(s.phase).toBe('SHOP');
@@ -260,8 +261,9 @@ describe('boss rounds (stubbed)', () => {
     expect(s.currency).toBe(currencyBefore + easy.balance.economy.bossClear[0]!);
     s = reduce(s, { type: 'CONTINUE' }, easy);
     expect(s.phase).toBe('BOSS_REWARD');
-    s = reduce(s, { type: 'PICK_MODIFIER', id: 'suffix_bias' }, easy);
-    expect(s.inRun).toEqual(['suffix_bias']);
+    const pick = s.boss!.reward!.offers[0]!;
+    s = reduce(s, { type: 'PICK_MODIFIER', id: pick }, easy);
+    expect(s.inRun).toEqual([pick]);
     expect(s.phase).toBe('ROUND_START');
     expect(s.round).toBe(5);
     expect(s.boss).toBeNull();

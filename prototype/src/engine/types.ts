@@ -157,6 +157,33 @@ export interface RoundEffects {
 
 export type InRunModifierId = string;
 
+// ---------------------------------------------------------------------------
+// In-run modifiers (content/inRunModifiers.ts mirrors the *In-Run Modifiers* tab)
+// ---------------------------------------------------------------------------
+
+export type ModifierCategory = 'scoring' | 'extension' | 'economy' | 'boss' | 'pool' | 'modifiers';
+
+/** Hook implementation ids in engine/modifiers/registry.ts. */
+export type HookId =
+  | 'suffix_bias' | 'prefix_bias' | 'inflection' | 'coinage' | 'rack_extension' | 'vowel_harmony'
+  | 'momentum' | 'etymologist' | 'agglutination' | 'mirror' | 'chain_lightning' | 'polyglot';
+
+export interface InRunModifierSpec {
+  id: InRunModifierId;
+  name: string;
+  rarity: Rarity;
+  category: ModifierCategory;
+  effect: string;
+  hookId: HookId;
+  params: Record<string, number | string | boolean>;
+}
+
+/** A currency source listed on the ScoreScreen (Economy tab). */
+export interface CurrencySource {
+  source: string;
+  amount: number;
+}
+
 /** Pre-run loadout chosen on the Lexicon screen (M7). Quick Start uses the default. */
 export interface PreRunLoadout {
   /** Tile modifiers applied to one tile of the given letter (D3). */
@@ -177,9 +204,19 @@ export interface TileActionOffer {
   sold: boolean;
 }
 
+/** The conditional in-run modifier slot (Shops tab; D8: Basic / Uncommon only). */
+export interface InRunOffer {
+  modifierId: InRunModifierId;
+  price: number;
+  sold: boolean;
+  /** The criterion that opened the slot. */
+  criterion: string;
+}
+
 export interface ShopState {
   offers: ShopOffer[];
   tileAction: TileActionOffer;
+  inRunOffer: InRunOffer | null;
   /** Rerolls bought in this shop. */
   rerolls: number;
   rerollPrice: number;
@@ -274,6 +311,8 @@ export interface BossState {
   endReason: 'timer' | 'overflow' | 'ended' | null;
   /** Amendment rerolls used. */
   rerolls: number;
+  /** Boss reward offer, set on a pass (BOSS_REWARD). */
+  reward: { offers: InRunModifierId[]; picksLeft: number } | null;
 }
 
 /** One step of extension within a round, as recorded in the run state. */
@@ -320,6 +359,11 @@ export interface RoundResult {
   /** What happened as a consequence of pass/fail. */
   outcome: 'pass' | 'life_lost' | 'insured' | 'game_over';
   currencyEarned: number;
+  currencySources: CurrencySource[];
+  /** How in-run modifiers changed the score, for the ScoreScreen. */
+  notes: string[];
+  /** Shop-slot criteria met this round (Shops tab). */
+  criteriaMet: string[];
 }
 
 export interface RunState {
@@ -341,6 +385,10 @@ export interface RunState {
   /** Counter for card instance ids. */
   cardSeq: number;
   inRun: InRunModifierId[];
+  /** Per-run numbers owned by modifiers (Momentum bonus, Etymologist cycle …). */
+  modifierState: Record<string, number>;
+  /** Achievement ids earned this run (secret words in M5; the rest in M7). */
+  achievements: string[];
   preRun: PreRunLoadout;
   /** Consecutive natural extension rounds. */
   streak: number;
@@ -391,6 +439,7 @@ export type Action =
   | { type: 'BUY_CARD'; slot: number }
   | { type: 'BUY_TILE_ACTION'; target: CardTarget }
   | { type: 'REROLL' }
+  | { type: 'BUY_IN_RUN' }
   | { type: 'SELL'; instanceId: string }
   | { type: 'LEAVE' }
   // Boss round
@@ -401,6 +450,7 @@ export type Action =
   | { type: 'PLACE_WORD'; row: number; col: number; dir: Dir; letters: string }
   /** End the boss early. `wordPoints` overrides the placed total (debug / tests only). */
   | { type: 'END_BOSS'; wordPoints?: number }
+  /** Pick one of the offered in-run modifiers (Polyglot: twice). */
   | { type: 'PICK_MODIFIER'; id?: InRunModifierId };
 
 export type ActionType = Action['type'];
@@ -422,6 +472,8 @@ export interface EngineContent {
   letters: LetterSpec[];
   cards: CardSpec[];
   bossModifiers: BossModifierSpec[];
+  inRunModifiers: InRunModifierSpec[];
+  secretWords: string[];
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string; word?: string };

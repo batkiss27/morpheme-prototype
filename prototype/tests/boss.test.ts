@@ -164,6 +164,7 @@ function bossAt(chainText: string, rules: Partial<BossRules> = {}): { boss: RunS
       ended: false,
       endReason: null,
       rerolls: 0,
+      reward: null,
     },
   };
 }
@@ -370,7 +371,7 @@ describe('boss round in the reducer', () => {
     expect(s.boss?.endReason).toBe('ended');
     s = reduce(s, { type: 'CONTINUE' }, easy);
     expect(s.phase).toBe('BOSS_REWARD');
-    s = reduce(s, { type: 'PICK_MODIFIER' }, easy);
+    s = reduce(s, { type: 'PICK_MODIFIER', id: s.boss!.reward!.offers[0]! }, easy);
     expect(s.phase).toBe('ROUND_START');
     expect(s.round).toBe(5);
     expect(s.boss).toBeNull();
@@ -380,7 +381,8 @@ describe('boss round in the reducer', () => {
     for (let i = 0; i < 3; i++) w = playRegularRound(w, short);
     w = reduce(reduce(w, { type: 'START_ROUND' }, short), { type: 'START_BOSS' }, short);
     w = reduce(w, { type: 'END_BOSS', wordPoints: 10_000 }, short);
-    w = reduce(reduce(w, { type: 'CONTINUE' }, short), { type: 'PICK_MODIFIER' }, short);
+    w = reduce(w, { type: 'CONTINUE' }, short);
+    w = reduce(w, { type: 'PICK_MODIFIER', id: w.boss!.reward!.offers[0]! }, short);
     expect(w.phase).toBe('WIN');
   });
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RunState } from '../engine';
 import { playCue } from './audio';
-import { BossIntroScreen, BossRewardStubScreen, BossScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from './screens';
+import { BossIntroScreen, BossScreen, EndScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from './screens';
 import { endRun, loadDictionary, useStore } from './store';
 
 /** Routes to one screen per run phase (spec §6). */
@@ -62,7 +62,7 @@ function Screen({ run }: { run: RunState }) {
     case 'BOSS_PLAY':
       return <BossScreen run={run} />;
     case 'BOSS_REWARD':
-      return <BossRewardStubScreen run={run} />;
+      return <RewardScreen run={run} />;
     case 'GAME_OVER':
     case 'WIN':
       return <EndScreen run={run} />;

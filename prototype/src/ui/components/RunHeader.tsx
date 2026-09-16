@@ -1,6 +1,7 @@
 import { scoring } from '../../engine';
 import type { RunState } from '../../engine';
 import { useStore } from '../store';
+import { ModifierPanel } from './ModifierPanel';
 
 /** Round, threshold, lives, currency, streak — shown on every in-run screen. */
 export function RunHeader({ run }: { run: RunState }) {
@@ -18,6 +19,7 @@ export function RunHeader({ run }: { run: RunState }) {
       <span>Currency <strong>{run.currency}</strong></span>
       <span>Lives <strong>{run.lives}</strong></span>
       <span>Streak <strong>{run.streak}</strong></span>
+      <ModifierPanel run={run} />
       <span className="muted">seed {run.seed}</span>
     </div>
   );

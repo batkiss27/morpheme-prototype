@@ -287,7 +287,9 @@ describe('utility cards', () => {
     expect(s.roundEffects.bank).toBe(true);
     s = playFromHand(s, c, 2, 'start');
     s = reduce(s, { type: 'SUBMIT' }, c);
-    expect(s.currency).toBe(defaultBalance.economy.roundClear * 2);
+    const bank = s.lastResult!.currencySources.find((x) => x.source.startsWith('Bank'))!;
+    expect(bank.amount).toBe(s.lastResult!.currencyEarned - bank.amount);
+    expect(s.currency).toBe(s.lastResult!.currencyEarned);
     // reset next round
     s = reduce(reduce(s, { type: 'CONTINUE' }, c), { type: 'LEAVE' }, c);
     expect(reduce(s, { type: 'START_ROUND' }, c).roundEffects).toEqual({});

@@ -1,6 +1,6 @@
 /** Shared test helpers: tiny dictionaries, tiles from strings, engine content. */
 
-import { bossModifiers, cards, defaultBalance, letters } from '../src/content';
+import { bossModifiers, cards, defaultBalance, inRunModifiers, letters, secretWords } from '../src/content';
 import { dictionary as dictFns } from '../src/engine';
 import { chain as C } from '../src/engine';
 import type { Balance, CardInstance, Chain, Dictionary, EngineContent, Letter, RunState, Tile } from '../src/engine';
@@ -25,7 +25,7 @@ export function dict(...words: string[]): Dictionary {
 }
 
 export function content(words: string[], balance: Balance = defaultBalance): EngineContent {
-  return { balance, dictionary: dict(...words), letters, cards, bossModifiers };
+  return { balance, dictionary: dict(...words), letters, cards, bossModifiers, inRunModifiers, secretWords };
 }
 
 /** A balance with only the given overrides changed (shallow per section). */

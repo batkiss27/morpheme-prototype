@@ -8,6 +8,7 @@
  *   scoring  → Scoring tab (yellow parameter cells) + DESIGN.md §2.5 (3+ bonus)
  *   hand     → Scoring tab row 13
  *   preRun   → Pre-Run Modifiers tab (risk modifiers)
+ *   reward   → In-Run Modifiers tab (offer rules)
  *   boss     → Boss Round Modifiers tab baseline note + DESIGN.md §2.6
  *   shop     → Shops tab
  *   economy  → Economy tab
@@ -76,6 +77,14 @@ export interface Balance {
     handLimits: Record<'sound_shift' | 'extension' | 'loanword' | 'utility', number>;
     /** Slot 1 is forced to an Extension card when the player holds none (Shops tab proposal). */
     guaranteeExtension: boolean;
+    /** Rarities the conditional in-run slot may offer (D8). */
+    inRunSlotRarities: RarityKey[];
+  };
+  reward: {
+    /** In-run modifiers offered after a boss (Polyglot adds one). */
+    offers: number;
+    /** Rarity odds per boss number, B1..B6 (In-Run Modifiers tab proposal). */
+    rarityOddsByBoss: Record<RarityKey, number>[];
   };
   preRun: {
     /**
@@ -140,6 +149,18 @@ export const defaultBalance: Balance = {
     sellFraction: 0.5,
     handLimits: { sound_shift: 3, extension: 3, loanword: 3, utility: 2 },
     guaranteeExtension: true,
+    inRunSlotRarities: ['basic', 'uncommon'],
+  },
+  reward: {
+    offers: 3,
+    rarityOddsByBoss: [
+      { basic: 0.6, uncommon: 0.3, exotic: 0.1, relic: 0 },
+      { basic: 0.5, uncommon: 0.35, exotic: 0.13, relic: 0.02 },
+      { basic: 0.4, uncommon: 0.38, exotic: 0.17, relic: 0.05 },
+      { basic: 0.3, uncommon: 0.4, exotic: 0.22, relic: 0.08 },
+      { basic: 0.2, uncommon: 0.4, exotic: 0.28, relic: 0.12 },
+      { basic: 0.1, uncommon: 0.4, exotic: 0.32, relic: 0.18 },
+    ],
   },
   preRun: {
     steepCurve: { thresholdScale: [1.15, 1.3, 1.5, 1.75], loadoutPoints: [1, 2, 3, 4] },

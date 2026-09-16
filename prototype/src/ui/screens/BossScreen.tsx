@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { boss as B, inRunMultiplier, lastError, scoring, tiles as T, chain as C } from '../../engine';
+import { boss as B, inRunMultiplier, lastError, modifiers as M, scoring, tiles as T, chain as C } from '../../engine';
 import type { Dir, RunState } from '../../engine';
 import { Tile } from '../components';
-import { dispatch, getState, useStore } from '../store';
+import { content, dispatch, getState, useStore } from '../store';
 
 interface Cursor {
   row: number;
@@ -93,7 +93,13 @@ export function BossScreen({ run }: { run: RunState }) {
 
   const threshold = scoring.threshold(run.round, balance);
   const running = scoring.scoreBoss(
-    { round: run.round, bossWordPoints: b.wordPoints, morphemes: run.chain ? C.morphemeCount(run.chain) : 1, inRunMult: inRunMultiplier(run) },
+    {
+      round: run.round,
+      bossWordPoints: b.wordPoints,
+      morphemes: run.chain ? C.morphemeCount(run.chain) : 1,
+      inRunMult: inRunMultiplier(run),
+      multiplierBase: M.multiplierBase(run, content()),
+    },
     balance,
   );
   const timePct = Math.max(0, Math.min(100, (100 * b.timeLeftMs) / rules.timerMs));

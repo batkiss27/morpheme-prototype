@@ -8,7 +8,7 @@ import { defaultBalance } from '../src/content';
 import { reduce } from '../src/engine';
 import type { RunState } from '../src/engine';
 import { App } from '../src/ui/App';
-import { BossIntroScreen, BossRewardStubScreen, BossScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
+import { BossIntroScreen, BossScreen, EndScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
 import { setDictionary, startRun, getState } from '../src/ui/store';
 import { balanceWith, withCards } from './helpers';
 import { anyDict, makeContent, newRun, playFromHand, playRegularRound } from './run-driver';
@@ -36,6 +36,7 @@ function states(): Record<string, RunState> {
   const bossEnd = s;
   s = reduce(s, { type: 'CONTINUE' }, easy);
   const bossReward = s;
+  s = reduce(s, { type: 'PICK_MODIFIER', id: s.boss!.reward!.offers[0]! }, easy);
   const forfeited = reduce(reduce(extendWithStep, { type: 'FORFEIT' }, easy), { type: 'CONTINUE' }, easy);
   const won = { ...bossReward, phase: 'WIN' as const };
   const carded = withCards(extendWithStep, 'before_and_after', 'glide', 'loanword', 'bank', 'amendment');
@@ -64,6 +65,10 @@ describe('screens render', () => {
     const html = renderToString(<ScoreScreen run={st.scored!} />);
     expect(html).toContain('Morpheme multiplier');
     expect(html).toContain('To the shop');
+    expect(html).toContain('Round clear');
+    const withMods = renderToString(<ScoreScreen run={{ ...st.scored!, inRun: ['suffix_bias'], lastResult: { ...st.scored!.lastResult!, notes: ['"ab" scores ×2 (4 pts)'] } }} />);
+    expect(withMods).toContain('scores ×2');
+    expect(renderToString(<ShopScreen run={{ ...st.shop!, shop: { ...st.shop!.shop!, inRunOffer: { modifierId: 'coinage', price: 10, sold: false, criterion: 'Front + back' } } }} />)).toContain('Coinage');
   });
   it('ShopScreen', () => {
     const html = renderToString(<ShopScreen run={st.shop!} />);
@@ -80,8 +85,12 @@ describe('screens render', () => {
     expect(play).toContain('class="board"');
     expect(play).toContain('Rack');
     expect(play).toContain('timer-bar');
-    expect(renderToString(<ScoreScreen run={st.bossEnd!} />)).toContain('Choose reward');
-    expect(renderToString(<BossRewardStubScreen run={st.bossReward!} />)).toContain('Skip reward');
+    const end = renderToString(<ScoreScreen run={st.bossEnd!} />);
+    expect(end).toContain('Choose reward');
+    expect(end).toContain('Boss clear');
+    const rewardHtml = renderToString(<RewardScreen run={st.bossReward!} />);
+    expect(rewardHtml).toContain('Choose');
+    expect((rewardHtml.match(/class="offer offer--/g) ?? []).length).toBe(3);
   });
   it('EndScreen for a loss and a win', () => {
     expect(renderToString(<EndScreen run={st.forfeited!} />)).toContain('Run over');

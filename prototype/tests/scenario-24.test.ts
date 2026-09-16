@@ -50,3 +50,29 @@ describe('scenario 24 (Scoring tab)', () => {
     expect(scenario.rounds).toHaveLength(24);
   });
 });
+
+describe('scenario 24 with Agglutination picked after B1 (P5-03)', () => {
+  const b = defaultBalance;
+  const perBoss = scenario.parameters.inRunMultPerBoss;
+  const bonus = 0.1;
+
+  for (const row of scenario.rounds.filter((r) => r.round >= 5)) {
+    it(`round ${row.round}: base 1.5 from round 5 on`, () => {
+      const inRunMult = 1 + perBoss * S.bossesBefore(row.round, b);
+      const base = b.scoring.multiplierBase + bonus;
+      const effM = Math.max(1, row.morphemes - (row.extensionCard ? 1 : 0));
+      const r =
+        row.kind === 'boss'
+          ? S.scoreBoss({ round: row.round, bossWordPoints: row.bossWordPoints ?? 0, morphemes: row.morphemes, inRunMult, multiplierBase: base }, b)
+          : S.scoreRegular(
+              { round: row.round, wordPoints: row.wordPoints ?? 0, morphemes: row.morphemes, strainCount: row.extensionCard ? 1 : 0, extension: shape(row), inRunMult, multiplierBase: base },
+              b,
+            );
+      const points = row.kind === 'boss' ? (row.bossWordPoints ?? 0) : (row.wordPoints ?? 0) * r.extensionBonus;
+      expect(r.morphemeMult).toBeCloseTo(Math.pow(base, effM - 1), 9);
+      expect(r.score).toBe(S.roundHalfUp(points * Math.pow(base, effM - 1) * inRunMult));
+      expect(r.score).toBeGreaterThan(row.expected.score);
+      expect(r.passed).toBe(true);
+    });
+  }
+});

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cards as cardFns, lastError, shop as shopFns } from '../../engine';
+import { cards as cardFns, lastError, modifiers as M, shop as shopFns } from '../../engine';
 import type { Letter, RunState } from '../../engine';
 import { Card, CardPanel, RunHeader } from '../components';
 import { content, dispatch, useStore } from '../store';
@@ -91,6 +91,33 @@ export function ShopScreen({ run }: { run: RunState }) {
               {shop.tileAction.sold ? 'Done' : `Remove for ${shop.tileAction.price}`}
             </button>
           </div>
+        )}
+
+        {shop.inRunOffer && (
+          <>
+            <h3 style={{ marginTop: 16 }}>
+              In-run modifier <span className="badge badge--pass">{shop.inRunOffer.criterion}</span>
+            </h3>
+            {(() => {
+              const spec = M.modifierSpec(c, shop.inRunOffer.modifierId);
+              if (!spec) return null;
+              const o = shop.inRunOffer;
+              return (
+                <div className="row">
+                  <div className={`offer offer--${spec.rarity} offer--static`}>
+                    <span className="offer__name">{spec.name}</span>
+                    <span className="offer__meta">
+                      {spec.rarity} · {spec.category}
+                    </span>
+                    <span className="offer__text">{spec.effect}</span>
+                  </div>
+                  <button type="button" className={!o.sold && run.currency >= o.price ? 'btn--primary btn--small' : 'btn--small'} disabled={o.sold || run.currency < o.price} onClick={() => dispatch({ type: 'BUY_IN_RUN' })}>
+                    {o.sold ? 'Taken' : `Buy for ${o.price}`}
+                  </button>
+                </div>
+              );
+            })()}
+          </>
         )}
 
         <div className="row" style={{ marginTop: 16 }}>

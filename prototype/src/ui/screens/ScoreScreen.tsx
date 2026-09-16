@@ -85,17 +85,42 @@ export function ScoreScreen({ run }: { run: RunState }) {
           </>
         )}
 
+        {r.notes.length > 0 && (
+          <>
+            <h3 style={{ marginTop: 12 }}>Modifiers</h3>
+            <ul className="muted" style={{ margin: 0 }}>
+              {r.notes.map((n, i) => (
+                <li key={i}>{n}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
         <h3 style={{ marginTop: 12 }}>Currency</h3>
-        <p>
-          {r.currencyEarned > 0 ? (
-            <>
-              +{r.currencyEarned} {boss ? 'boss clear' : 'round clear'}{' '}
-              <span className="muted">(margin, streak and dividend payouts arrive in M5)</span>
-            </>
-          ) : (
-            <span className="muted">Nothing earned.</span>
-          )}
-        </p>
+        {r.currencySources.length === 0 ? (
+          <p className="muted">Nothing earned.</p>
+        ) : (
+          <table className="breakdown">
+            <tbody>
+              {r.currencySources.map((c, i) => (
+                <tr key={i}>
+                  <td>{c.source}</td>
+                  <td>+{c.amount}</td>
+                </tr>
+              ))}
+              <tr className="total">
+                <td>Earned</td>
+                <td>+{r.currencyEarned}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+        {r.criteriaMet.length > 0 && (
+          <p style={{ marginTop: 8 }}>
+            <span className="badge badge--pass">shop bonus</span> {r.criteriaMet.join(' · ')} — the shop offers an in-run modifier.
+          </p>
+        )}
+        {run.flags.bossJumpPending && <p style={{ color: 'var(--warn)' }}>Secret word! The next round jumps straight to the boss.</p>}
 
         {r.outcome === 'life_lost' && (
           <p style={{ color: 'var(--warn)' }}>A life absorbed the miss. No shop this round; the word keeps its extension.</p>
