@@ -1,19 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RunState } from '../engine';
-import { BossStubScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from './screens';
+import { playCue } from './audio';
+import { BossIntroScreen, BossRewardStubScreen, BossScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from './screens';
 import { endRun, loadDictionary, useStore } from './store';
 
 /** Routes to one screen per run phase (spec §6). */
 export function App() {
   const { run } = useStore();
+  const [transition, setTransition] = useState(false);
+  const prevPhase = useRef<RunState['phase'] | null>(null);
 
   useEffect(() => {
     void loadDictionary();
   }, []);
 
+  // P4-07: a 1 s "BOSS ROUND" transition when a boss round begins.
+  useEffect(() => {
+    const phase = run?.phase ?? null;
+    if (phase === 'BOSS_INTRO' && prevPhase.current !== 'BOSS_INTRO') {
+      setTransition(true);
+      playCue('boss_transition', 'relic');
+      const t = setTimeout(() => setTransition(false), 1000);
+      prevPhase.current = phase;
+      return () => clearTimeout(t);
+    }
+    prevPhase.current = phase;
+    return undefined;
+  }, [run?.phase]);
+
   if (!run) return <StartScreen />;
   return (
     <div>
+      {transition && (
+        <div className="transition" aria-hidden>
+          <div className="transition__text">BOSS ROUND</div>
+        </div>
+      )}
       <Screen run={run} />
       {run.phase !== 'GAME_OVER' && run.phase !== 'WIN' && (
         <p style={{ marginTop: 24 }}>
@@ -31,14 +53,16 @@ function Screen({ run }: { run: RunState }) {
     case 'EXTEND':
       return <RoundScreen run={run} />;
     case 'SCORED':
+    case 'BOSS_END':
       return <ScoreScreen run={run} />;
     case 'SHOP':
       return <ShopScreen run={run} />;
     case 'BOSS_INTRO':
+      return <BossIntroScreen run={run} />;
     case 'BOSS_PLAY':
-    case 'BOSS_END':
+      return <BossScreen run={run} />;
     case 'BOSS_REWARD':
-      return <BossStubScreen run={run} />;
+      return <BossRewardStubScreen run={run} />;
     case 'GAME_OVER':
     case 'WIN':
       return <EndScreen run={run} />;

@@ -63,6 +63,28 @@ export function ScoreScreen({ run }: { run: RunState }) {
           </tbody>
         </table>
 
+        {boss && run.boss && (
+          <>
+            <h3 style={{ marginTop: 12 }}>Words placed ({run.boss.words.length})</h3>
+            {run.boss.words.length === 0 ? (
+              <p className="muted">None.</p>
+            ) : (
+              <p>
+                {run.boss.words.map((w, i) => (
+                  <span key={i}>
+                    <code>{w.word}</code> {w.points}
+                    {i < run.boss!.words.length - 1 ? ' · ' : ''}
+                  </span>
+                ))}
+              </p>
+            )}
+            <p className="muted">
+              Ended by {run.boss.endReason === 'timer' ? 'the clock' : run.boss.endReason === 'overflow' ? 'rack overflow' : 'you'}
+              {run.boss.modifierId ? ` · modifier: ${run.boss.modifierId.replace(/_/g, ' ')}` : ''}
+            </p>
+          </>
+        )}
+
         <h3 style={{ marginTop: 12 }}>Currency</h3>
         <p>
           {r.currencyEarned > 0 ? (

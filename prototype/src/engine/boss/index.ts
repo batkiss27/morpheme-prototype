@@ -1,2 +1,5 @@
-/** Boss board, placement, feed and timer — implemented in M4 (P4-01…P4-04). */
-export {};
+/** Boss round: board, placement, feed, timer, modifiers (M4). */
+export * from './board';
+export * from './placement';
+export * from './feed';
+export * from './modifiers';

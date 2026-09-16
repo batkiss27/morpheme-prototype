@@ -185,11 +185,95 @@ export interface ShopState {
   rerollPrice: number;
 }
 
+// ---------------------------------------------------------------------------
+// Boss round (engine/boss/, content/bossModifiers.ts)
+// ---------------------------------------------------------------------------
+
+export type Dir = 'H' | 'V';
+
+/** N×N crossword board. `cells` is row-major, `starter` lists the starter word's cell indices. */
+export interface Board {
+  size: number;
+  cells: (Tile | null)[];
+  starter: number[];
+}
+
+export interface PlacedTile {
+  row: number;
+  col: number;
+  tile: Tile;
+}
+
+export interface FormedWord {
+  word: string;
+  /** Cell indices left→right / top→bottom. */
+  cells: number[];
+  points: number;
+}
+
+/** Everything a boss modifier can change, resolved once at START_BOSS. */
+export interface BossRules {
+  timerMs: number;
+  feedIntervalMs: number;
+  startingRack: number;
+  rackCap: number;
+  /** Minimum length of the main word placed. */
+  minWordLength: number;
+  vowelsScoreZero: boolean;
+  /** Vowel feed tiles play as Y (Vowel Wild tiles unaffected). */
+  vowelsToY: boolean;
+  hideQueue: boolean;
+  /** Rack overflow ends the round instead of discarding a tile. */
+  overflowEnds: boolean;
+  /** Which tile is lost on overflow. */
+  overflowDiscards: 'oldest' | 'newest';
+  /** Starter word uses only its last morpheme regardless of boss number. */
+  starterShrink: boolean;
+}
+
+/** Boss modifier ids implemented in engine/boss/modifiers.ts. */
+export type BossHookId =
+  | 'y_not' | 'long_words' | 'rapid_feed' | 'tight_rack' | 'fog' | 'half_time' | 'vowel_tax' | 'overload';
+
+export interface BossModifierSpec {
+  id: string;
+  name: string;
+  effect: string;
+  severity: 1 | 2 | 3;
+  hookId: BossHookId;
+  params: Record<string, number | string | boolean>;
+}
+
+export interface BossWordLog {
+  word: string;
+  crossWords: string[];
+  points: number;
+  /** Elapsed ms when placed. */
+  atMs: number;
+}
+
 export interface BossState {
-  /** Placeholder until M4. Boss number 1..6. */
+  /** 1..6 */
   bossNumber: number;
-  /** Stubbed: total word points placed this boss round. */
+  modifierId: string | null;
+  /** null until START_BOSS resolves the modifier. */
+  rules: BossRules | null;
+  board: Board;
+  rack: Tile[];
+  /** Upcoming tiles, front = next to arrive. Refilled (reshuffled) when empty (D4). */
+  queue: Tile[];
+  /** How many times the feed has cycled; makes copied tile ids unique. */
+  cycle: number;
+  timeLeftMs: number;
+  /** ms until the next tile arrives. */
+  feedTimerMs: number;
+  /** Sum of points of every word placed (the scenario's "boss word points"). */
   wordPoints: number;
+  words: BossWordLog[];
+  ended: boolean;
+  endReason: 'timer' | 'overflow' | 'ended' | null;
+  /** Amendment rerolls used. */
+  rerolls: number;
 }
 
 /** One step of extension within a round, as recorded in the run state. */
@@ -309,10 +393,13 @@ export type Action =
   | { type: 'REROLL' }
   | { type: 'SELL'; instanceId: string }
   | { type: 'LEAVE' }
-  // Boss stubs (M4 replaces these). END_BOSS takes the placed-word points as
-  // input so the scenario can be driven; omitted = auto-pass at threshold.
+  // Boss round
   | { type: 'START_BOSS' }
+  /** Time advances only through this action (UI drives it with rAF). */
   | { type: 'BOSS_TICK'; ms: number }
+  /** Type `letters` from the rack starting at a cell, skipping occupied cells. */
+  | { type: 'PLACE_WORD'; row: number; col: number; dir: Dir; letters: string }
+  /** End the boss early. `wordPoints` overrides the placed total (debug / tests only). */
   | { type: 'END_BOSS'; wordPoints?: number }
   | { type: 'PICK_MODIFIER'; id?: InRunModifierId };
 
@@ -334,6 +421,7 @@ export interface EngineContent {
   dictionary: Dictionary;
   letters: LetterSpec[];
   cards: CardSpec[];
+  bossModifiers: BossModifierSpec[];
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string; word?: string };

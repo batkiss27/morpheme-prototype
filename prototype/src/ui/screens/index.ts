@@ -4,4 +4,6 @@ export { RoundScreen } from './RoundScreen';
 export { ScoreScreen } from './ScoreScreen';
 export { ShopScreen } from './ShopScreen';
 export { EndScreen } from './EndScreen';
-export { BossStubScreen } from './BossStubScreen';
+export { BossIntroScreen } from './BossIntroScreen';
+export { BossScreen } from './BossScreen';
+export { BossRewardStubScreen } from './BossStubScreen';

@@ -13,10 +13,12 @@
  *                                                     │ fail w/o life → GAME_OVER
  *   SHOP: BUY_CARD · BUY_TILE_ACTION · REROLL · SELL · USE_CARD (Loanword) · LEAVE
  *
- * Boss phases are stubs until M4: END_BOSS takes the placed-word points as an
- * input (omitted = auto-pass at exactly the threshold).
+ * BOSS_PLAY: BOSS_TICK advances the timers and feed; PLACE_WORD types letters
+ * from the rack onto the board; END_BOSS ends early (its `wordPoints` override
+ * exists for tests and the DebugPanel only).
  */
 
+import * as boss from './boss';
 import * as cards from './cards';
 import * as chainMod from './chain';
 import * as rng from './rng';
@@ -25,6 +27,7 @@ import * as shopMod from './shop';
 import * as tiles from './tiles';
 import type {
   Action,
+  BossState,
   CardInstance,
   CardTarget,
   Chain,
@@ -117,11 +120,24 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.phase !== 'ROUND_START') return wrong();
       const base: RunState = { ...state, steps: [], undo: [], strainThisRound: 0, roundEffects: {}, shop: null };
       if (scoring.isBossRound(state.round, balance)) {
-        return ok({
-          ...base,
-          phase: 'BOSS_INTRO',
-          boss: { bossNumber: scoring.bossNumber(state.round, balance), wordPoints: 0 },
-        });
+        const [mod, r1] = boss.rollModifier(content.bossModifiers, state.rng);
+        const bossState: BossState = {
+          bossNumber: scoring.bossNumber(state.round, balance),
+          modifierId: mod?.id ?? null,
+          rules: null,
+          board: boss.createBoard(balance.boss.gridSize),
+          rack: [],
+          queue: [],
+          cycle: 0,
+          timeLeftMs: 0,
+          feedTimerMs: 0,
+          wordPoints: 0,
+          words: [],
+          ended: false,
+          endReason: null,
+          rerolls: 0,
+        };
+        return ok({ ...base, phase: 'BOSS_INTRO', boss: bossState, rng: r1 });
       }
       const d = tiles.draw(state.pool, balance.hand.size, state.rng);
       return ok({ ...base, phase: 'EXTEND', pool: d.pool, hand: d.drawn, rng: d.rng });
@@ -287,32 +303,61 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       return ok(advanceRound({ ...state, shop: null }, balance));
     }
 
-    // --- Boss stubs (M4) ---------------------------------------------------
+    // --- Boss round ---------------------------------------------------------
 
     case 'START_BOSS': {
-      if (state.phase !== 'BOSS_INTRO') return wrong();
-      return ok({ ...state, phase: 'BOSS_PLAY' });
+      if (state.phase !== 'BOSS_INTRO' || !state.boss) return wrong();
+      const b = state.boss;
+      const mod = content.bossModifiers.find((m) => m.id === b.modifierId);
+      const rules = boss.applyModifier(boss.baseRules(b.bossNumber, balance), mod);
+      const chainTiles = state.chain?.tiles ?? [];
+      const board = state.chain ? boss.placeStarter(b.board, boss.starterTiles(state.chain, b.bossNumber, balance, rules)) : b.board;
+      let [queue, r1] = boss.buildQueue(chainTiles, state.rng, 1);
+      if (rules.vowelsToY) queue = boss.applyVowelsToY(queue);
+      const rack = queue.slice(0, rules.startingRack);
+      return ok({
+        ...state,
+        phase: 'BOSS_PLAY',
+        rng: r1,
+        boss: { ...b, rules, board, rack, queue: queue.slice(rules.startingRack), cycle: 1, timeLeftMs: rules.timerMs, feedTimerMs: rules.feedIntervalMs },
+      });
     }
 
     case 'BOSS_TICK': {
-      if (state.phase !== 'BOSS_PLAY') return wrong();
-      return ok(state);
+      if (state.phase !== 'BOSS_PLAY' || !state.boss?.rules) return wrong();
+      if (!(action.ms > 0)) return fail('BOSS_TICK needs a positive ms');
+      const t = boss.tick(state.boss, action.ms, state.chain?.tiles ?? [], state.rng);
+      const next = { ...state, boss: t.boss, rng: t.rng };
+      return ok(t.ended ? finishBoss(next, t.boss.wordPoints, t.ended, content) : next);
+    }
+
+    case 'PLACE_WORD': {
+      if (state.phase !== 'BOSS_PLAY' || !state.boss?.rules) return wrong();
+      const b = state.boss;
+      const rules = b.rules;
+      if (!rules) return wrong();
+      const resolved = boss.resolveRack(b.rack, action.letters);
+      if (!resolved.ok) return fail(resolved.error);
+      const placements = boss.placementsFor(b.board, action.row, action.col, action.dir, resolved.value.used);
+      if (!placements.ok) return fail(placements.error);
+      const v = boss.validatePlacement(b.board, placements.value, content.dictionary, rules);
+      if (!v.ok) return fail(v.error);
+      const entry = { word: v.value.main.word, crossWords: v.value.cross.map((w) => w.word), points: v.value.points, atMs: rules.timerMs - b.timeLeftMs };
+      return ok({
+        ...state,
+        boss: {
+          ...b,
+          board: boss.applyPlacement(b.board, placements.value),
+          rack: resolved.value.rack,
+          wordPoints: b.wordPoints + v.value.points,
+          words: [...b.words, entry],
+        },
+      });
     }
 
     case 'END_BOSS': {
       if (state.phase !== 'BOSS_PLAY' || !state.boss) return wrong();
-      const morphemes = state.chain ? chainMod.morphemeCount(state.chain) : 1;
-      const inRunMult = inRunMultiplier(state);
-      const t = scoring.threshold(state.round, balance);
-      const wordPoints =
-        action.wordPoints ?? Math.ceil(t / (scoring.morphemeMultiplier(morphemes, balance) * inRunMult));
-      const breakdown = scoring.scoreBoss(
-        { round: state.round, bossWordPoints: wordPoints, morphemes, inRunMult },
-        balance,
-      );
-      const bonus = balance.economy.bossClear[state.boss.bossNumber - 1] ?? 0;
-      const after = settle(state, breakdown, state.streak, bonus);
-      return ok({ ...after, phase: 'BOSS_END', boss: { ...state.boss, wordPoints } });
+      return ok(finishBoss(state, action.wordPoints ?? state.boss.wordPoints, 'ended', content));
     }
 
     case 'PICK_MODIFIER': {
@@ -442,6 +487,20 @@ function settle(state: RunState, breakdown: scoring.ScoreBreakdown, streakIfPass
   }
   const result: RoundResult = { ...breakdown, outcome: 'game_over', currencyEarned: 0 };
   return { ...state, lastResult: result, streak: 0 };
+}
+
+/** Score the boss round from its placed-word points and settle pass/fail (P4-06). */
+function finishBoss(state: RunState, wordPoints: number, reason: 'timer' | 'overflow' | 'ended', content: EngineContent): RunState {
+  const { balance } = content;
+  const b = state.boss as BossState;
+  const morphemes = state.chain ? chainMod.morphemeCount(state.chain) : 1;
+  const breakdown = scoring.scoreBoss(
+    { round: state.round, bossWordPoints: wordPoints, morphemes, inRunMult: inRunMultiplier(state) },
+    balance,
+  );
+  const bonus = balance.economy.bossClear[b.bossNumber - 1] ?? 0;
+  const after = settle(state, breakdown, state.streak, bonus);
+  return { ...after, phase: 'BOSS_END', boss: { ...b, wordPoints, ended: true, endReason: reason } };
 }
 
 /** Next round, or WIN after the last one. */

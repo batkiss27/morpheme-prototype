@@ -218,3 +218,37 @@ select { font: inherit; color: var(--text); background: var(--panel); border: 1p
 .shop-grid { display: flex; gap: 12px; flex-wrap: wrap; }
 .shop-slot { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .shop-slot__text { max-width: 200px; font-size: 12px; color: var(--muted); }
+
+/* --- Boss round (M4) -------------------------------------------------------- */
+:root { --cell: 30px; }
+.boss__top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 12px; background: var(--panel); border-radius: var(--radius) var(--radius) 0 0; }
+.boss__score { font-size: 18px; }
+.boss__clock { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.boss__clock--low { color: var(--danger); }
+.timer-bar { height: 8px; background: var(--panel-alt); border-radius: 0 0 var(--radius) var(--radius); margin-bottom: 12px; overflow: hidden; }
+.timer-bar__fill { height: 100%; background: var(--warn); transition: width 0.1s linear; }
+.boss__cols { display: grid; grid-template-columns: auto 300px; gap: 12px; align-items: start; }
+@media (max-width: 900px) { .boss__cols { grid-template-columns: 1fr; } }
+.board { display: grid; gap: 2px; background: var(--panel); padding: 4px; border-radius: var(--radius); width: max-content; }
+.cell {
+  position: relative; width: var(--cell); height: var(--cell); padding: 0; border: 1px solid var(--panel-alt); border-radius: 3px;
+  background: var(--bg); color: var(--text); font-weight: 700; font-size: 15px; line-height: 1;
+}
+.cell:disabled { opacity: 1; cursor: default; }
+.cell--tile { background: var(--tile); color: var(--tile-text); border-color: transparent; }
+.cell--starter { background: var(--tile-committed); }
+.cell--pending { background: var(--panel-alt); color: var(--accent-2); border: 1px dashed var(--accent-2); }
+.cell--cursor { border: 2px solid var(--accent-2); color: var(--accent-2); }
+.cell__value { position: absolute; right: 2px; bottom: 0; font-size: 8px; font-weight: 600; }
+kbd { background: var(--panel-alt); border-radius: 3px; padding: 0 4px; font-size: 12px; }
+.feed-letters { display: flex; gap: 4px; flex-wrap: wrap; }
+.feed-letter { display: inline-block; min-width: 22px; text-align: center; background: var(--tile); color: var(--tile-text); border-radius: 3px; font-weight: 700; }
+
+/* --- Transition (P4-07) ------------------------------------------------------ */
+.transition {
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); animation: transition-fade 1s ease-in-out forwards; pointer-events: none;
+}
+.transition__text { font-size: 64px; font-weight: 800; letter-spacing: 0.2em; color: var(--warn); animation: transition-zoom 1s ease-out; }
+@keyframes transition-fade { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes transition-zoom { from { transform: scale(0.7); } to { transform: scale(1.1); } }

@@ -7,11 +7,13 @@ import { useSyncExternalStore } from 'react';
 import { createRun, dictionary as dictFns, lastError, reduce, defaultLoadout, rng as rngFns } from '../engine';
 import { playCue } from './audio';
 import type { Action, Balance, CardSpec, Dictionary, EngineContent, PreRunLoadout, RunState } from '../engine';
-import { cards, defaultBalance, letters } from '../content';
+import { bossModifiers, cards, defaultBalance, letters } from '../content';
 import { validateCards } from '../engine/cards';
+import { validateBossModifiers } from '../engine/boss';
 
-// Startup check: every card names an implemented effect (P3-01).
+// Startup checks: every card / boss modifier names an implemented effect (P3-01, P4-04).
 validateCards(cards);
+validateBossModifiers(bossModifiers);
 
 export type DictionaryStatus =
   | { state: 'loading' }
@@ -86,7 +88,7 @@ async function fetchText(url: string): Promise<string> {
 
 export function content(): EngineContent {
   if (state.dictionary.state !== 'ready') throw new Error('dictionary not loaded');
-  return { balance: state.balance, dictionary: state.dictionary.dictionary, letters, cards };
+  return { balance: state.balance, dictionary: state.dictionary.dictionary, letters, cards, bossModifiers };
 }
 
 /**

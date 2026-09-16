@@ -8,7 +8,7 @@ import { defaultBalance } from '../src/content';
 import { reduce } from '../src/engine';
 import type { RunState } from '../src/engine';
 import { App } from '../src/ui/App';
-import { BossStubScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
+import { BossIntroScreen, BossRewardStubScreen, BossScreen, EndScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
 import { setDictionary, startRun, getState } from '../src/ui/store';
 import { balanceWith, withCards } from './helpers';
 import { anyDict, makeContent, newRun, playFromHand, playRegularRound } from './run-driver';
@@ -32,7 +32,7 @@ function states(): Record<string, RunState> {
   const bossIntro = s;
   s = reduce(s, { type: 'START_BOSS' }, easy);
   const bossPlay = s;
-  s = reduce(s, { type: 'END_BOSS' }, easy);
+  s = reduce(s, { type: 'END_BOSS', wordPoints: 1000 }, easy);
   const bossEnd = s;
   s = reduce(s, { type: 'CONTINUE' }, easy);
   const bossReward = s;
@@ -72,11 +72,16 @@ describe('screens render', () => {
     expect(html).toContain('Tile action');
     expect(renderToString(<ShopScreen run={st.shopWithCards!} />)).toContain('Sell for');
   });
-  it('BossStubScreen for every boss phase', () => {
-    expect(renderToString(<BossStubScreen run={st.bossIntro!} />)).toContain('Start boss');
-    expect(renderToString(<BossStubScreen run={st.bossPlay!} />)).toContain('Auto-pass');
-    expect(renderToString(<BossStubScreen run={st.bossEnd!} />)).toContain('Choose reward');
-    expect(renderToString(<BossStubScreen run={st.bossReward!} />)).toContain('Skip reward');
+  it('boss screens for every boss phase', () => {
+    const intro = renderToString(<BossIntroScreen run={st.bossIntro!} />);
+    expect(intro).toContain('Start boss round');
+    expect(intro).toContain('Modifier');
+    const play = renderToString(<BossScreen run={st.bossPlay!} />);
+    expect(play).toContain('class="board"');
+    expect(play).toContain('Rack');
+    expect(play).toContain('timer-bar');
+    expect(renderToString(<ScoreScreen run={st.bossEnd!} />)).toContain('Choose reward');
+    expect(renderToString(<BossRewardStubScreen run={st.bossReward!} />)).toContain('Skip reward');
   });
   it('EndScreen for a loss and a win', () => {
     expect(renderToString(<EndScreen run={st.forfeited!} />)).toContain('Run over');

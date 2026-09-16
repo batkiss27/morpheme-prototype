@@ -1,0 +1,478 @@
+[
+  {
+    "name": "extend the starter to the right: form + al → formal",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "formal"
+    ],
+    "placed": [
+      [
+        3,
+        5,
+        "a"
+      ],
+      [
+        3,
+        6,
+        "l"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "formal",
+      "cross": [],
+      "points": 11
+    }
+  },
+  {
+    "name": "vertical word hanging off a starter letter: m-a-i-l down from the m",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "mail"
+    ],
+    "placed": [
+      [
+        4,
+        4,
+        "a"
+      ],
+      [
+        5,
+        4,
+        "i"
+      ],
+      [
+        6,
+        4,
+        "l"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "mail",
+      "cross": [],
+      "points": 6
+    }
+  },
+  {
+    "name": "existing tiles fill a gap: f.r.m + o,a → 'foram'",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".f.r.m.",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "foram"
+    ],
+    "placed": [
+      [
+        3,
+        2,
+        "o"
+      ],
+      [
+        3,
+        4,
+        "a"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "foram",
+      "cross": [],
+      "points": 10
+    }
+  },
+  {
+    "name": "parallel word forms cross words, all must be valid and all score",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "ax",
+      "fa",
+      "or",
+      "rx"
+    ],
+    "placed": [
+      [
+        4,
+        1,
+        "a"
+      ],
+      [
+        4,
+        2,
+        "r"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "ar",
+      "error": "not in the dictionary"
+    }
+  },
+  {
+    "name": "parallel word: main 'ar' and crosses 'fa','or' all valid",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "ar",
+      "fa",
+      "or"
+    ],
+    "placed": [
+      [
+        4,
+        1,
+        "a"
+      ],
+      [
+        4,
+        2,
+        "r"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "ar",
+      "cross": [
+        "fa",
+        "or"
+      ],
+      "points": 9
+    }
+  },
+  {
+    "name": "a cross word that is not in the dictionary is rejected",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "ar",
+      "fa"
+    ],
+    "placed": [
+      [
+        4,
+        1,
+        "a"
+      ],
+      [
+        4,
+        2,
+        "r"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "\"or\" is not in the dictionary"
+    }
+  },
+  {
+    "name": "must connect to the board",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "ax"
+    ],
+    "placed": [
+      [
+        0,
+        0,
+        "a"
+      ],
+      [
+        0,
+        1,
+        "x"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "must connect"
+    }
+  },
+  {
+    "name": "tiles must be in one line",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "formal"
+    ],
+    "placed": [
+      [
+        3,
+        5,
+        "a"
+      ],
+      [
+        4,
+        6,
+        "l"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "one row or one column"
+    }
+  },
+  {
+    "name": "tiles must be contiguous (a real gap)",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "mail"
+    ],
+    "placed": [
+      [
+        4,
+        4,
+        "a"
+      ],
+      [
+        6,
+        4,
+        "l"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "contiguous"
+    }
+  },
+  {
+    "name": "cannot place on an occupied cell",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "formal"
+    ],
+    "placed": [
+      [
+        3,
+        4,
+        "a"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "occupied"
+    }
+  },
+  {
+    "name": "a single tile takes the longer run as its main word",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "ma"
+    ],
+    "placed": [
+      [
+        4,
+        4,
+        "a"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "ma",
+      "cross": [],
+      "points": 4
+    }
+  },
+  {
+    "name": "a lone tile with no 2-letter run is rejected",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [],
+    "placed": [
+      [
+        0,
+        0,
+        "a"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "must connect"
+    }
+  },
+  {
+    "name": "Long Words Only: main word must reach the minimum length",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "ma"
+    ],
+    "rules": {
+      "minWordLength": 4
+    },
+    "placed": [
+      [
+        4,
+        4,
+        "a"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "at least 4 letters"
+    }
+  },
+  {
+    "name": "Vowel Tax: vowels score 0",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "formal"
+    ],
+    "rules": {
+      "vowelsScoreZero": true
+    },
+    "placed": [
+      [
+        3,
+        5,
+        "a"
+      ],
+      [
+        3,
+        6,
+        "l"
+      ]
+    ],
+    "expect": {
+      "ok": true,
+      "main": "formal",
+      "cross": [],
+      "points": 9
+    }
+  },
+  {
+    "name": "off the board",
+    "board": [
+      ".......",
+      ".......",
+      ".......",
+      ".form..",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "dictionary": [
+      "formal"
+    ],
+    "placed": [
+      [
+        3,
+        6,
+        "a"
+      ],
+      [
+        3,
+        7,
+        "l"
+      ]
+    ],
+    "expect": {
+      "ok": false,
+      "error": "off the board"
+    }
+  }
+]

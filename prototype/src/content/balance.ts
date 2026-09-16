@@ -52,6 +52,12 @@ export interface Balance {
     gridSize: number;
     /** Starter-word morphemes per boss (0 = full word). D7. */
     starterMorphemes: number[];
+    /** Shortest main word allowed on the board. */
+    minWordLength: number;
+    /** How many upcoming tiles the UI shows. */
+    queuePreview: number;
+    /** Elapsed-ms granularity the UI ticks at (keeps the log small). */
+    tickMs: number;
   };
   shop: {
     cardSlots: number;
@@ -116,6 +122,9 @@ export const defaultBalance: Balance = {
     rackCap: 7,
     gridSize: 15,
     starterMorphemes: [0, 3, 2, 1, 1, 1],
+    minWordLength: 2,
+    queuePreview: 5,
+    tickMs: 100,
   },
   shop: {
     cardSlots: 3,

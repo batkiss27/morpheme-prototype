@@ -312,13 +312,18 @@ describe('utility cards', () => {
     expect(reduce(s, { type: 'USE_CARD', instanceId: 'clexicographer0' }, c).roundEffects.lexicographer).toBe(true);
   });
 
-  it('Amendment is only usable at a boss intro (stub until M4)', () => {
+  it('Amendment rerolls the boss modifier at a boss intro only', () => {
     const c = makeContent(anyDict, easy);
     const s = withCards(reduce(newRun(c), { type: 'START_ROUND' }, c), 'amendment');
     expect(lastError(reduce(s, { type: 'USE_CARD', instanceId: 'camendment0' }, c))).toMatch(/cannot be used in phase EXTEND/);
-    const intro: RunState = { ...s, phase: 'BOSS_INTRO', round: 4, boss: { bossNumber: 1, wordPoints: 0 } };
+    let intro = withCards({ ...newRun(c), round: 4 }, 'amendment');
+    intro = reduce(intro, { type: 'START_ROUND' }, c);
+    expect(intro.phase).toBe('BOSS_INTRO');
+    const before = intro.boss?.modifierId;
     const r = reduce(intro, { type: 'USE_CARD', instanceId: 'camendment0' }, c);
     expect(lastError(r)).toBeUndefined();
+    expect(r.boss?.modifierId).not.toBe(before);
+    expect(r.boss?.rerolls).toBe(1);
     expect(r.flags.amendmentUsed).toBe(true);
     expect(r.cards).toEqual([]);
   });

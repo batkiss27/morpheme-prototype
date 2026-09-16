@@ -4,6 +4,7 @@
  * Consuming the card and logging is the reducer's job.
  */
 
+import { rollModifier } from '../boss/modifiers';
 import * as C from '../chain';
 import * as rng from '../rng';
 import { draw, isBlank, returnTiles, tileLetter } from '../tiles';
@@ -113,10 +114,12 @@ export const bank: InstantEffect = ({ state }) => ok({ roundEffects: { ...state.
 export const insurance: InstantEffect = ({ state }) => ok({ roundEffects: { ...state.roundEffects, insurance: true } });
 export const lexicographer: InstantEffect = ({ state }) => ok({ roundEffects: { ...state.roundEffects, lexicographer: true } });
 
-/** Reroll the boss modifier — a no-op until boss modifiers exist (M4). */
-export const amendment: InstantEffect = ({ state }) => {
+/** Reroll the boss modifier to a different one. */
+export const amendment: InstantEffect = ({ state, content }) => {
   if (!state.boss) return fail('Amendment is used at the start of a Boss Round');
-  return ok({ flags: { ...state.flags, amendmentUsed: true } });
+  const [mod, next] = rollModifier(content.bossModifiers, state.rng, state.boss.modifierId);
+  if (!mod) return fail('there is no other boss modifier to roll');
+  return ok({ boss: { ...state.boss, modifierId: mod.id, rerolls: state.boss.rerolls + 1 }, rng: next, flags: { ...state.flags, amendmentUsed: true } });
 };
 
 // --- Echo ---------------------------------------------------------------------

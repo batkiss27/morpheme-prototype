@@ -1,5 +1,5 @@
 /** Helpers to drive the run reducer in tests. */
-import { cards, defaultBalance, letters } from '../src/content';
+import { bossModifiers, cards, defaultBalance, letters } from '../src/content';
 import { createRun, defaultLoadout, reduce, tiles as T } from '../src/engine';
 import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState } from '../src/engine';
 
@@ -7,7 +7,7 @@ import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState
 export const anyDict: Dictionary = { has: (w) => w.length >= 2, size: Number.POSITIVE_INFINITY };
 
 export function makeContent(dictionary: Dictionary = anyDict, balance: Balance = defaultBalance): EngineContent {
-  return { balance, dictionary, letters, cards };
+  return { balance, dictionary, letters, cards, bossModifiers };
 }
 
 export function newRun(content: EngineContent, seed = 1, loadout = defaultLoadout): RunState {
@@ -34,11 +34,11 @@ export function playRegularRound(state: RunState, content: EngineContent, n = 1)
   return s;
 }
 
-/** One stubbed boss round: START_ROUND → START_BOSS → END_BOSS(auto-pass) → CONTINUE → PICK_MODIFIER. */
-export function playBossRound(state: RunState, content: EngineContent, wordPoints?: number): RunState {
+/** One boss round ended early: START_ROUND → START_BOSS → END_BOSS(wordPoints, default = enough to pass) → CONTINUE → PICK_MODIFIER. */
+export function playBossRound(state: RunState, content: EngineContent, wordPoints = 1_000_000): RunState {
   let s = reduce(state, { type: 'START_ROUND' }, content);
   s = reduce(s, { type: 'START_BOSS' }, content);
-  s = reduce(s, wordPoints === undefined ? { type: 'END_BOSS' } : { type: 'END_BOSS', wordPoints }, content);
+  s = reduce(s, { type: 'END_BOSS', wordPoints }, content);
   s = reduce(s, { type: 'CONTINUE' }, content);
   if (s.phase === 'BOSS_REWARD') s = reduce(s, { type: 'PICK_MODIFIER' }, content);
   return s;

@@ -244,14 +244,15 @@ describe('boss rounds (stubbed)', () => {
   it('ROUND_START on a boss round → BOSS_INTRO → BOSS_PLAY → BOSS_END → BOSS_REWARD → ROUND_START', () => {
     let s = start(toRound4());
     expect(s.phase).toBe('BOSS_INTRO');
-    expect(s.boss).toEqual({ bossNumber: 1, wordPoints: 0 });
+    expect(s.boss).toMatchObject({ bossNumber: 1, wordPoints: 0, rules: null });
     expect(s.hand).toEqual([]);
     s = reduce(s, { type: 'START_BOSS' }, easy);
     expect(s.phase).toBe('BOSS_PLAY');
+    expect(s.boss?.rules).not.toBeNull();
     s = reduce(s, { type: 'BOSS_TICK', ms: 16 }, easy);
     expect(lastError(s)).toBeUndefined();
     const currencyBefore = s.currency;
-    s = reduce(s, { type: 'END_BOSS' }, easy);
+    s = reduce(s, { type: 'END_BOSS', wordPoints: 1000 }, easy);
     expect(s.phase).toBe('BOSS_END');
     expect(s.lastResult?.kind).toBe('boss');
     expect(s.lastResult?.passed).toBe(true);
