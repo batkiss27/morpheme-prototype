@@ -195,6 +195,43 @@ describe('failing a threshold', () => {
   });
 });
 
+describe('FORFEIT', () => {
+  it('scores 0, fails, discards this round\'s steps and returns the hand', () => {
+    const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1 } }));
+    let s = playRegularRound(newRun(easy), easy, 3);
+    s = start(s);
+    s = playFromHand(s, easy, 2, 'back'); // a step the player then abandons
+    const before = s.chain;
+    s = reduce(s, { type: 'FORFEIT' }, easy);
+    expect(s.phase).toBe('SCORED');
+    expect(s.lastResult?.score).toBe(0);
+    expect(s.lastResult?.passed).toBe(false);
+    expect(s.lastResult?.outcome).toBe('game_over');
+    expect(s.chain?.tiles).toHaveLength(3);
+    expect(s.chain).not.toEqual(before);
+    expect(s.hand).toEqual([]);
+    expect(allTiles(s)).toHaveLength(100);
+    expect(s.steps).toEqual([]);
+    s = reduce(s, { type: 'CONTINUE' }, easy);
+    expect(s.phase).toBe('GAME_OVER');
+  });
+
+  it('with a life: loses it and moves on', () => {
+    const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1 } }));
+    let s = start(newRun(easy, 1, { tileModifiers: [], categories: { second_breath: 1 } }));
+    s = reduce(s, { type: 'FORFEIT' }, easy);
+    expect(s.lastResult?.outcome).toBe('life_lost');
+    expect(s.chain).toBeNull();
+    s = reduce(s, { type: 'CONTINUE' }, easy);
+    expect(s.phase).toBe('ROUND_START');
+    expect(s.round).toBe(2);
+  });
+
+  it('is only allowed in EXTEND', () => {
+    expect(lastError(reduce(newRun(content), { type: 'FORFEIT' }, content))).toBeTruthy();
+  });
+});
+
 describe('boss rounds (stubbed)', () => {
   const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1 } }));
 

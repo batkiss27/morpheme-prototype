@@ -3,6 +3,7 @@
  * → equal state. Time enters as `BOSS_TICK`; randomness lives in `state.rng`.
  *
  *   ROUND_START ─START_ROUND─► EXTEND ─SUBMIT─► SCORED ─CONTINUE─► SHOP ─LEAVE─► ROUND_START
+ *        │                        │ FORFEIT ─────► SCORED (score 0, always a fail)
  *        │                                        │ fail w/ life → ROUND_START (no shop)
  *        │ boss round                             │ fail w/o life → GAME_OVER
  *        ▼
@@ -172,6 +173,34 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         phase: 'SCORED',
         pool: tiles.returnTiles(state.pool, state.hand),
         hand: [],
+        roundStart: null,
+      });
+    }
+
+    case 'FORFEIT': {
+      if (state.phase !== 'EXTEND' || !state.roundStart) return wrong();
+      // Give up the round: this round's steps are discarded, the hand returns
+      // to the pool, and the round scores 0 (always a fail).
+      const chain = state.roundStart.chain;
+      const breakdown = scoring.scoreRegular(
+        {
+          round: state.round,
+          wordPoints: 0,
+          morphemes: chain ? chainMod.morphemeCount(chain) : 0,
+          strainCount: 0,
+          extension: { front: 0, back: 0 },
+          inRunMult: inRunMultiplier(state),
+        },
+        balance,
+      );
+      const after = settle(state, breakdown, 0, 0);
+      return ok({
+        ...after,
+        phase: 'SCORED',
+        chain,
+        pool: tiles.returnTiles(state.pool, state.roundStart.hand),
+        hand: [],
+        steps: [],
         roundStart: null,
       });
     }

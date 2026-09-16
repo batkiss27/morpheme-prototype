@@ -128,3 +128,76 @@ input {
   letter-spacing: 0.04em;
   color: var(--muted);
 }
+
+/* --- Buttons --------------------------------------------------------------- */
+.btn--primary { background: var(--accent); color: var(--tile-text); border-color: var(--accent); font-weight: 600; }
+.btn--primary:hover { filter: brightness(1.1); }
+.btn--danger { border-color: var(--danger); color: var(--danger); }
+.btn--small { padding: 2px 8px; font-size: 12px; }
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--panel-alt);
+}
+.badge--warn { background: var(--warn); color: var(--tile-text); }
+.badge--pass { background: var(--accent); color: var(--tile-text); }
+.badge--fail { background: var(--danger); color: var(--tile-text); }
+
+/* --- Run header ------------------------------------------------------------ */
+.run-header {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: var(--panel);
+  border-radius: var(--radius);
+}
+
+/* --- Chain ----------------------------------------------------------------- */
+.chain { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; min-height: calc(var(--tile-size) + 8px); }
+.chain__morpheme { display: flex; gap: 2px; }
+.chain__tile { display: inline-block; padding-bottom: 4px; border-bottom: 4px solid transparent; }
+.chain__tile--natural, .chain__tile--both { border-bottom-color: var(--accent); }
+.chain__tile--head { border-bottom-color: var(--accent-2); }
+.chain__tile--tail { border-bottom-color: var(--accent); }
+.chain__caption { margin-top: 6px; }
+
+/* --- Hand & extension controls -------------------------------------------- */
+.hand { display: flex; gap: 6px; flex-wrap: wrap; }
+.tile--dim { opacity: 0.45; }
+.selection { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-height: var(--tile-size); }
+.selection__order { font-size: 11px; color: var(--muted); }
+.candidate { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.candidate--ok { color: var(--accent); }
+.candidate--bad { color: var(--danger); }
+.error {
+  padding: 8px 12px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  color: var(--danger);
+  margin-bottom: 12px;
+}
+.steps { list-style: none; padding: 0; margin: 0; }
+.steps li { padding: 2px 0; }
+.steps li + li { border-top: 1px solid var(--panel-alt); }
+.preview { font-size: 18px; }
+
+/* --- Layout ---------------------------------------------------------------- */
+.cols { display: grid; grid-template-columns: 1fr 320px; gap: 12px; }
+@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+
+/* --- Score breakdown ------------------------------------------------------- */
+.breakdown { border-collapse: collapse; width: 100%; max-width: 560px; }
+.breakdown td { padding: 4px 8px; border-bottom: 1px solid var(--panel-alt); }
+.breakdown td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.breakdown tr.total td { font-weight: 700; font-size: 18px; border-top: 2px solid var(--muted); }
+.big { font-size: 28px; font-weight: 700; }
+select { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--muted); border-radius: var(--radius); padding: 4px; }

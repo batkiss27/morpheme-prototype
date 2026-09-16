@@ -205,6 +205,8 @@ export type Action =
     }
   | { type: 'UNDO_STEP' }
   | { type: 'SUBMIT' }
+  /** Give up the round (no valid extension): scores 0, fails the threshold. */
+  | { type: 'FORFEIT' }
   | { type: 'CONTINUE' }
   | { type: 'LEAVE' }
   // Boss stubs (M4 replaces these). END_BOSS takes the placed-word points as

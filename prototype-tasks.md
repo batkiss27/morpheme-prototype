@@ -59,11 +59,11 @@ Rough sizing is in story points (1 = an hour or two for an agent, 5 = a day).
 
 | ID | Story | Acceptance criteria | Pts | Deps | Status |
 |---|---|---|---|---|---|
-| P2-01 | As a player I can quick-start a run. | Start screen: seed input (random default), Quick Start with default loadout; store creates the run. | 1 | P1-06 | todo |
-| P2-02 | As a player I can extend the word. | `RoundScreen` per spec §6: chain display with morpheme gaps and span underline; hand; select tiles → add front/back; step list with undo; invalid step shown red with attempted word; blank prompts letter; submit disabled until ≥1 morpheme. | 5 | P2-01, P1-03 | todo |
-| P2-03 | As a player I see why I scored what I scored. | `ScoreScreen` shows every term in the formula and pass/fail vs threshold; continue. | 2 | P2-02 | todo |
-| P2-04 | As a player I see a placeholder shop and can continue. | `ShopScreen` stub with currency and Leave button so rounds chain. | 1 | P2-03 | todo |
-| P2-05 | As a player I can lose and restart. | `EndScreen` on GAME_OVER; restart same seed / new seed. | 1 | P2-04 | todo |
+| P2-01 | As a player I can quick-start a run. | Start screen: seed input (random default), Quick Start with default loadout; store creates the run. | 1 | P1-06 | done |
+| P2-02 | As a player I can extend the word. | `RoundScreen` per spec §6: chain display with morpheme gaps and span underline; hand; select tiles → add front/back; step list with undo; invalid step shown red with attempted word; blank prompts letter; submit disabled until ≥1 morpheme. | 5 | P2-01, P1-03 | done |
+| P2-03 | As a player I see why I scored what I scored. | `ScoreScreen` shows every term in the formula and pass/fail vs threshold; continue. | 2 | P2-02 | done |
+| P2-04 | As a player I see a placeholder shop and can continue. | `ShopScreen` stub with currency and Leave button so rounds chain. | 1 | P2-03 | done |
+| P2-05 | As a player I can lose and restart. | `EndScreen` on GAME_OVER; restart same seed / new seed. | 1 | P2-04 | done |
 
 ### M3 — Shop & cards
 
@@ -163,4 +163,5 @@ Items not yet turned into stories. Promote by adding a row above with an ID.
 | Date | Change |
 |---|---|
 | 2026-09-16 | v0.1 — initial plan drafted from `prototype-spec.md` v0.1. |
+| 2026-09-16 | M2 done (P2-01…P2-05). 138 tests. Added to scope: (1) `FORFEIT` action + "Forfeit round" button — without it a player holding no valid extension had no move at all, so "lose on threshold" was unreachable; scores 0, discards the round's steps, fails. (2) `BossStubScreen` placeholder for BOSS_INTRO/PLAY/END/REWARD so a run can pass round 4 before M4 lands (auto-pass / fail buttons). (3) Export-run-JSON button on EndScreen landed early (part of P6-03). (4) `tests/app.test.tsx` server-renders every screen ("App renders without crashing", spec §9). |
 | 2026-09-16 | M0 and M1 done (P0-01…P0-05, P1-01…P1-07). 128 engine tests. Notes: (1) `balance.scoring.bonusThreePlus = 3` comes from DESIGN.md §2.5 — the workbook's Scoring tab has no 3+ bonus parameter; add one to the sheet or drop it from the design. (2) The Scoring tab's "in-run multiplier gained per boss" (0.2) is a scenario assumption, not a game rule, so it lives in `tests/fixtures/scenario-24.json`, not in `balance.ts`. (3) `tests/fixtures/scenario-24.json` is generated from the workbook formulas — regenerate it whenever the Scoring tab changes. (4) Boss stub: `END_BOSS { wordPoints? }` accepts placed-word points as input (omitted = auto-pass at threshold) so later tests can drive the full 24 rounds before M4 lands. |

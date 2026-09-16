@@ -228,7 +228,8 @@ never a `setTimeout` inside the engine.
 ```
 
 **Actions in M1** (`engine/types.ts` `Action`): `START_ROUND`, `PLAY_STEP {side, tileIds, playedAs?, viaCard?}`,
-`UNDO_STEP`, `SUBMIT`, `CONTINUE` (leaves SCORED / BOSS_END), `LEAVE` (shop), and the boss stubs
+`UNDO_STEP`, `SUBMIT`, `FORFEIT` (give up the round: steps discarded, scores 0, fails), `CONTINUE`
+(leaves SCORED / BOSS_END), `LEAVE` (shop), and the boss stubs
 `START_BOSS`, `BOSS_TICK {ms}`, `END_BOSS {wordPoints?}`, `PICK_MODIFIER {id?}`. Rejected actions
 are still appended to `log` with an `error` and leave the rest of the state untouched, so an export
 replays exactly. `roundStart` snapshots the chain and hand at `START_ROUND`; `UNDO_STEP` replays
@@ -431,6 +432,10 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | D1 implemented as its default: a failed boss with a life is retried (same round, fresh `START_ROUND`). | §5, §11 |
 | 2026-09-16 | Rounding: scores and thresholds use half-up rounding (Excel `ROUND`) via `scoring.roundHalfUp`. Effective morphemes never drop below 1. | §7 |
 | 2026-09-16 | Morpheme ids are `m:<first tile id>`; tiles are unique per run so this is stable across undo/replay. | §4 |
+| 2026-09-16 | `FORFEIT` exists so a stuck player (no valid extension, no cards) can end the round: it discards the round's steps, returns the hand, scores 0 and fails the threshold (life or GAME_OVER). The UI asks for confirmation. | §5, §6 |
+| 2026-09-16 | `ROUND_START` has no screen: `ui/store.ts` dispatches `START_ROUND` immediately after any action that lands there, so the log still records the arrow. | §5, §6 |
+| 2026-09-16 | In round 1 the start word plus a further step in the same round counts as "2 morphemes, same side" for the extension bonus (the start morpheme is a back morpheme for bonus purposes). | §7 |
+| 2026-09-16 | RoundScreen shows live candidate words for front/back with a ✓/✗ dictionary hint before the step is played; the engine still validates on `PLAY_STEP` and rejected steps show red with the attempted word. | §6 |
 
 ---
 
@@ -439,4 +444,5 @@ section, and update `DESIGN.md` if the product rule changed.
 | Date | Version | Change |
 |---|---|---|
 | 2026-09-16 | 0.1 | Initial spec drafted from DESIGN.md rev 3 and Morpheme_Master.xlsx. |
+| 2026-09-16 | 0.3 | M2 landed. §5: `FORFEIT` action. §6: Start/Round/Score/Shop/End screens exist; boss phases use a stub screen until M4; ScoreScreen also serves BOSS_END. Decision log: forfeit, ROUND_START auto-advance, round-1 bonus rule, candidate-word hints. |
 | 2026-09-16 | 0.2 | M0/M1 landed. §3: `tests/` and `scripts/` live under `prototype/` (they need its toolchain). §5: listed the M1 action set and the log/undo mechanics. Decision log: first-word rule, life-loss flow, D1 default, rounding, morpheme ids. `EngineContent` = `{ balance, dictionary, letters }` is what the reducer receives. |

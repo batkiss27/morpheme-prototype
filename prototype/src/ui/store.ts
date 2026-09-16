@@ -4,7 +4,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
-import { createRun, dictionary as dictFns, reduce, defaultLoadout } from '../engine';
+import { createRun, dictionary as dictFns, reduce, defaultLoadout, rng as rngFns } from '../engine';
 import type { Action, Balance, Dictionary, EngineContent, PreRunLoadout, RunState } from '../engine';
 import { defaultBalance, letters } from '../content';
 
@@ -38,7 +38,7 @@ function subscribe(listener: () => void): () => void {
 }
 
 export function useStore(): StoreState {
-  return useSyncExternalStore(subscribe, () => state);
+  return useSyncExternalStore(subscribe, () => state, () => state);
 }
 
 export function getState(): StoreState {
@@ -84,15 +84,46 @@ export function content(): EngineContent {
   return { balance: state.balance, dictionary: state.dictionary.dictionary, letters };
 }
 
+/**
+ * A seed input is either a number or any string (hashed). Empty → random.
+ */
+export function parseSeed(input: string): number {
+  const trimmed = input.trim();
+  if (trimmed === '') return randomSeed();
+  if (/^\d+$/.test(trimmed)) return Number(trimmed) >>> 0;
+  return rngFns.seedFromString(trimmed);
+}
+
+export function randomSeed(): number {
+  return Math.floor(Math.random() * 0xffffffff) >>> 0;
+}
+
 export function startRun(seed: number, loadout: PreRunLoadout = defaultLoadout): void {
-  setState({ run: createRun(seed, loadout, content()) });
+  setState({ run: autoAdvance(createRun(seed, loadout, content())) });
 }
 
 export function dispatch(action: Action): void {
   if (!state.run) throw new Error('no run in progress');
-  setState({ run: reduce(state.run, action, content()) });
+  setState({ run: autoAdvance(reduce(state.run, action, content())) });
+}
+
+/** Back to the start screen. */
+export function endRun(): void {
+  setState({ run: null });
+}
+
+/** ROUND_START has no screen: the UI drives the START_ROUND arrow itself (spec §5). */
+function autoAdvance(run: RunState): RunState {
+  let r = run;
+  while (r.phase === 'ROUND_START') r = reduce(r, { type: 'START_ROUND' }, content());
+  return r;
 }
 
 export function setBalance(balance: Balance): void {
   setState({ balance });
+}
+
+/** Inject a dictionary directly (tests, or a future "add word" admin hook). */
+export function setDictionary(dictionary: Dictionary): void {
+  setState({ dictionary: { state: 'ready', dictionary } });
 }
