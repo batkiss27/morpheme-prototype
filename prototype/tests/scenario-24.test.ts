@@ -1,0 +1,52 @@
+/**
+ * P1-05: the Scoring tab scenario reproduced by the engine. Word points and
+ * boss word points are inputs (as in the workbook); score and threshold per
+ * round must match within ±1.
+ */
+import { describe, expect, it } from 'vitest';
+import { defaultBalance } from '../src/content';
+import { scoring as S } from '../src/engine';
+import scenario from './fixtures/scenario-24.json';
+
+type Row = (typeof scenario.rounds)[number];
+
+const shape = (row: Row) =>
+  row.bonus === 'two_same_side' ? { front: 0, back: 2 } : row.bonus === 'front_back' ? { front: 1, back: 1 } : { front: 0, back: 1 };
+
+describe('scenario 24 (Scoring tab)', () => {
+  const b = defaultBalance;
+  const perBoss = scenario.parameters.inRunMultPerBoss;
+
+  for (const row of scenario.rounds) {
+    it(`round ${row.round} ${row.kind}: ${row.action}`, () => {
+      // The workbook assumes one modest scoring modifier per boss beaten.
+      const inRunMult = 1 + perBoss * S.bossesBefore(row.round, b);
+      const r =
+        row.kind === 'boss'
+          ? S.scoreBoss({ round: row.round, bossWordPoints: row.bossWordPoints ?? 0, morphemes: row.morphemes, inRunMult }, b)
+          : S.scoreRegular(
+              {
+                round: row.round,
+                wordPoints: row.wordPoints ?? 0,
+                morphemes: row.morphemes,
+                strainCount: row.extensionCard ? 1 : 0,
+                extension: shape(row),
+                inRunMult,
+              },
+              b,
+            );
+      expect(r.effectiveMorphemes).toBe(row.expected.effectiveMorphemes);
+      expect(r.morphemeMult).toBeCloseTo(row.expected.morphemeMult, 5);
+      expect(r.extensionBonus).toBe(row.expected.extensionBonus);
+      expect(r.inRunMult).toBeCloseTo(row.expected.inRunMult, 9);
+      expect(Math.abs(r.score - row.expected.score)).toBeLessThanOrEqual(1);
+      expect(Math.abs(r.threshold - row.expected.threshold)).toBeLessThanOrEqual(1);
+      expect(r.passed).toBe(row.expected.pass);
+    });
+  }
+
+  it('passes all 24 rounds, as the workbook reports', () => {
+    expect(scenario.rounds.every((r) => r.expected.pass)).toBe(true);
+    expect(scenario.rounds).toHaveLength(24);
+  });
+});

@@ -1,0 +1,520 @@
+{
+  "name": "Scoring tab \u2014 24-round scenario (form \u2192 formal \u2192 informal \u2026)",
+  "source": "Morpheme_Master.xlsx / Scoring, rows 16\u201339, parameters C5:C12",
+  "parameters": {
+    "multiplierBase": 1.4,
+    "round1Threshold": 6,
+    "thresholdGrowth": 1.5,
+    "bossThresholdFactor": 1.5,
+    "strain": 1,
+    "bonusTwoSameSide": 1.5,
+    "bonusFrontBack": 2,
+    "inRunMultPerBoss": 0.2
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "kind": "regular",
+      "action": "Start: form",
+      "chain": "form",
+      "morphemesAdded": 1,
+      "morphemes": 1,
+      "wordPoints": 9,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 1,
+        "morphemeMult": 1.0,
+        "extensionBonus": 1,
+        "inRunMult": 1.0,
+        "score": 9,
+        "threshold": 6,
+        "pass": true
+      }
+    },
+    {
+      "round": 2,
+      "kind": "regular",
+      "action": "+al (back)",
+      "chain": "formal",
+      "morphemesAdded": 1,
+      "morphemes": 2,
+      "wordPoints": 11,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 2,
+        "morphemeMult": 1.4,
+        "extensionBonus": 1,
+        "inRunMult": 1.0,
+        "score": 15,
+        "threshold": 9,
+        "pass": true
+      }
+    },
+    {
+      "round": 3,
+      "kind": "regular",
+      "action": "+in (front)",
+      "chain": "informal",
+      "morphemesAdded": 1,
+      "morphemes": 3,
+      "wordPoints": 13,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 3,
+        "morphemeMult": 1.96,
+        "extensionBonus": 1,
+        "inRunMult": 1.0,
+        "score": 25,
+        "threshold": 14,
+        "pass": true
+      }
+    },
+    {
+      "round": 4,
+      "kind": "boss",
+      "action": "B1 \u2014 words: form, mail, norm, loan, farm",
+      "chain": "informal (starter: full word)",
+      "morphemesAdded": 0,
+      "morphemes": 3,
+      "wordPoints": null,
+      "bossWordPoints": 34,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 3,
+        "morphemeMult": 1.96,
+        "extensionBonus": 1,
+        "inRunMult": 1.0,
+        "score": 67,
+        "threshold": 30,
+        "pass": true
+      }
+    },
+    {
+      "round": 5,
+      "kind": "regular",
+      "action": "+ly (back)",
+      "chain": "informally",
+      "morphemesAdded": 1,
+      "morphemes": 4,
+      "wordPoints": 18,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 4,
+        "morphemeMult": 2.744,
+        "extensionBonus": 1,
+        "inRunMult": 1.2,
+        "score": 59,
+        "threshold": 30,
+        "pass": true
+      }
+    },
+    {
+      "round": 6,
+      "kind": "regular",
+      "action": "Before & After: ly \u2192 lyric",
+      "chain": "informal~lyric",
+      "morphemesAdded": 1,
+      "morphemes": 5,
+      "wordPoints": 23,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 4,
+        "morphemeMult": 2.744,
+        "extensionBonus": 1,
+        "inRunMult": 1.2,
+        "score": 76,
+        "threshold": 46,
+        "pass": true
+      }
+    },
+    {
+      "round": 7,
+      "kind": "regular",
+      "action": "+al (back)",
+      "chain": "informal~lyrical",
+      "morphemesAdded": 1,
+      "morphemes": 6,
+      "wordPoints": 25,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 6,
+        "morphemeMult": 5.37824,
+        "extensionBonus": 1,
+        "inRunMult": 1.2,
+        "score": 161,
+        "threshold": 68,
+        "pass": true
+      }
+    },
+    {
+      "round": 8,
+      "kind": "boss",
+      "action": "B2 \u2014 words: lyric, final, calm, rail, firm, loam",
+      "chain": "(starter: last 3 morphemes)",
+      "morphemesAdded": 0,
+      "morphemes": 6,
+      "wordPoints": null,
+      "bossWordPoints": 52,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 6,
+        "morphemeMult": 5.37824,
+        "extensionBonus": 1,
+        "inRunMult": 1.2,
+        "score": 336,
+        "threshold": 154,
+        "pass": true
+      }
+    },
+    {
+      "round": 9,
+      "kind": "regular",
+      "action": "+ly (back)",
+      "chain": "informal~lyrically",
+      "morphemesAdded": 1,
+      "morphemes": 7,
+      "wordPoints": 30,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 7,
+        "morphemeMult": 7.529536,
+        "extensionBonus": 1,
+        "inRunMult": 1.4,
+        "score": 316,
+        "threshold": 154,
+        "pass": true
+      }
+    },
+    {
+      "round": 10,
+      "kind": "regular",
+      "action": "Before & After: ly \u2192 lymph",
+      "chain": "informal~lyrical~lymph",
+      "morphemesAdded": 1,
+      "morphemes": 8,
+      "wordPoints": 40,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 7,
+        "morphemeMult": 7.529536,
+        "extensionBonus": 1,
+        "inRunMult": 1.4,
+        "score": 422,
+        "threshold": 231,
+        "pass": true
+      }
+    },
+    {
+      "round": 11,
+      "kind": "regular",
+      "action": "+atic (back)",
+      "chain": "informal~lyrical~lymphatic",
+      "morphemesAdded": 1,
+      "morphemes": 9,
+      "wordPoints": 46,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 9,
+        "morphemeMult": 14.757891,
+        "extensionBonus": 1,
+        "inRunMult": 1.4,
+        "score": 950,
+        "threshold": 346,
+        "pass": true
+      }
+    },
+    {
+      "round": 12,
+      "kind": "boss",
+      "action": "B3 \u2014 words: film, lamp, hymn, panic, claim, myth, trail",
+      "chain": "(starter: last 2 morphemes)",
+      "morphemesAdded": 0,
+      "morphemes": 9,
+      "wordPoints": null,
+      "bossWordPoints": 88,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 9,
+        "morphemeMult": 14.757891,
+        "extensionBonus": 1,
+        "inRunMult": 1.4,
+        "score": 1818,
+        "threshold": 778,
+        "pass": true
+      }
+    },
+    {
+      "round": 13,
+      "kind": "regular",
+      "action": "Blend: -tic + ticket",
+      "chain": "\u2026lymphatic~ket",
+      "morphemesAdded": 1,
+      "morphemes": 10,
+      "wordPoints": 53,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 9,
+        "morphemeMult": 14.757891,
+        "extensionBonus": 1,
+        "inRunMult": 1.6,
+        "score": 1251,
+        "threshold": 778,
+        "pass": true
+      }
+    },
+    {
+      "round": 14,
+      "kind": "regular",
+      "action": "+s (back)",
+      "chain": "\u2026lymphaticket~s",
+      "morphemesAdded": 1,
+      "morphemes": 11,
+      "wordPoints": 54,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 11,
+        "morphemeMult": 28.925465,
+        "extensionBonus": 1,
+        "inRunMult": 1.6,
+        "score": 2499,
+        "threshold": 1168,
+        "pass": true
+      }
+    },
+    {
+      "round": 15,
+      "kind": "regular",
+      "action": "Before & After: s \u2192 sing",
+      "chain": "\u2026tickets~ing",
+      "morphemesAdded": 1,
+      "morphemes": 12,
+      "wordPoints": 58,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 11,
+        "morphemeMult": 28.925465,
+        "extensionBonus": 1,
+        "inRunMult": 1.6,
+        "score": 2684,
+        "threshold": 1752,
+        "pass": true
+      }
+    },
+    {
+      "round": 16,
+      "kind": "boss",
+      "action": "B4 \u2014 words: stick, mint, fancy, prism, latch, slick, tramp, gain",
+      "chain": "(starter: last morpheme)",
+      "morphemesAdded": 0,
+      "morphemes": 12,
+      "wordPoints": null,
+      "bossWordPoints": 110,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 12,
+        "morphemeMult": 40.495652,
+        "extensionBonus": 1,
+        "inRunMult": 1.6,
+        "score": 7127,
+        "threshold": 3941,
+        "pass": true
+      }
+    },
+    {
+      "round": 17,
+      "kind": "regular",
+      "action": "+er, +s (back, 2 steps)",
+      "chain": "\u2026sing~ers",
+      "morphemesAdded": 2,
+      "morphemes": 14,
+      "wordPoints": 61,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "two_same_side",
+      "expected": {
+        "effectiveMorphemes": 14,
+        "morphemeMult": 79.371477,
+        "extensionBonus": 1.5,
+        "inRunMult": 1.8,
+        "score": 13072,
+        "threshold": 3941,
+        "pass": true
+      }
+    },
+    {
+      "round": 18,
+      "kind": "regular",
+      "action": "Before & After: s \u2192 sun",
+      "chain": "\u2026singers~un",
+      "morphemesAdded": 1,
+      "morphemes": 15,
+      "wordPoints": 63,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 14,
+        "morphemeMult": 79.371477,
+        "extensionBonus": 1,
+        "inRunMult": 1.8,
+        "score": 9001,
+        "threshold": 5912,
+        "pass": true
+      }
+    },
+    {
+      "round": 19,
+      "kind": "regular",
+      "action": "+ny (back)",
+      "chain": "\u2026sun~ny",
+      "morphemesAdded": 1,
+      "morphemes": 16,
+      "wordPoints": 68,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 16,
+        "morphemeMult": 155.568096,
+        "extensionBonus": 1,
+        "inRunMult": 1.8,
+        "score": 19042,
+        "threshold": 8867,
+        "pass": true
+      }
+    },
+    {
+      "round": 20,
+      "kind": "boss",
+      "action": "B5 \u2014 words: sunny, rest, chimp, glint, taken, faint, lyric, spam, gnat",
+      "chain": "(starter: last morpheme)",
+      "morphemesAdded": 0,
+      "morphemes": 16,
+      "wordPoints": null,
+      "bossWordPoints": 135,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 16,
+        "morphemeMult": 155.568096,
+        "extensionBonus": 1,
+        "inRunMult": 1.8,
+        "score": 37803,
+        "threshold": 19952,
+        "pass": true
+      }
+    },
+    {
+      "round": 21,
+      "kind": "regular",
+      "action": "Before & After: ny \u2192 nymph",
+      "chain": "\u2026sunny~mph",
+      "morphemesAdded": 1,
+      "morphemes": 17,
+      "wordPoints": 82,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 16,
+        "morphemeMult": 155.568096,
+        "extensionBonus": 1,
+        "inRunMult": 2.0,
+        "score": 25513,
+        "threshold": 19952,
+        "pass": true
+      }
+    },
+    {
+      "round": 22,
+      "kind": "regular",
+      "action": "+s (back)",
+      "chain": "\u2026nymph~s",
+      "morphemesAdded": 1,
+      "morphemes": 18,
+      "wordPoints": 83,
+      "bossWordPoints": null,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 18,
+        "morphemeMult": 304.913467,
+        "extensionBonus": 1,
+        "inRunMult": 2.0,
+        "score": 50616,
+        "threshold": 29927,
+        "pass": true
+      }
+    },
+    {
+      "round": 23,
+      "kind": "regular",
+      "action": "Before & After: s \u2192 sea",
+      "chain": "\u2026nymphs~ea",
+      "morphemesAdded": 1,
+      "morphemes": 19,
+      "wordPoints": 85,
+      "bossWordPoints": null,
+      "extensionCard": true,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 18,
+        "morphemeMult": 304.913467,
+        "extensionBonus": 1,
+        "inRunMult": 2.0,
+        "score": 51835,
+        "threshold": 44891,
+        "pass": true
+      }
+    },
+    {
+      "round": 24,
+      "kind": "boss",
+      "action": "B6 (final) \u2014 words: plunge, stink, chasm, fairy, tempt, glean, hymns, crisp, lynch, kept",
+      "chain": "(starter: last morpheme)",
+      "morphemesAdded": 0,
+      "morphemes": 19,
+      "wordPoints": null,
+      "bossWordPoints": 170,
+      "extensionCard": false,
+      "bonus": "none",
+      "expected": {
+        "effectiveMorphemes": 19,
+        "morphemeMult": 426.878854,
+        "extensionBonus": 1,
+        "inRunMult": 2.0,
+        "score": 145139,
+        "threshold": 101005,
+        "pass": true
+      }
+    }
+  ]
+}

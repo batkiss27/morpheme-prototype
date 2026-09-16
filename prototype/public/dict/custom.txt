@@ -1,0 +1,1 @@
+# Admin word additions, one per line, lowercase. Lines starting with # are ignored.

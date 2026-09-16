@@ -1,0 +1,73 @@
+[
+  {
+    "name": "bear → bearable → unbearable (back then front, two rounds)",
+    "dictionary": ["bear", "bearable", "unbearable"],
+    "start": "bear",
+    "steps": [
+      { "round": 2, "side": "back", "letters": "able" },
+      { "round": 3, "side": "front", "letters": "un" }
+    ],
+    "expect": { "ok": true, "text": "unbearable", "morphemeCount": 3, "natural": true, "headText": "unbearable", "tailText": "unbearable" }
+  },
+  {
+    "name": "front + back in one round",
+    "dictionary": ["form", "formal", "informal"],
+    "start": "form",
+    "steps": [
+      { "round": 2, "side": "back", "letters": "al" },
+      { "round": 2, "side": "front", "letters": "in" }
+    ],
+    "expect": { "ok": true, "text": "informal", "morphemeCount": 3, "natural": true, "addedInRound": { "round": 2, "front": 1, "back": 1 } }
+  },
+  {
+    "name": "two steps same side in one round",
+    "dictionary": ["sing", "singer", "singers"],
+    "start": "sing",
+    "steps": [
+      { "round": 2, "side": "back", "letters": "er" },
+      { "round": 2, "side": "back", "letters": "s" }
+    ],
+    "expect": { "ok": true, "text": "singers", "morphemeCount": 3, "natural": true, "addedInRound": { "round": 2, "front": 0, "back": 2 } }
+  },
+  {
+    "name": "invalid step is rejected with the attempted word",
+    "dictionary": ["bear", "bearable"],
+    "start": "bear",
+    "steps": [
+      { "round": 2, "side": "back", "letters": "able" },
+      { "round": 3, "side": "front", "letters": "xy" }
+    ],
+    "expect": { "ok": false, "stepIndex": 1, "word": "xybearable" }
+  },
+  {
+    "name": "intermediate step must be valid even if the final word is",
+    "dictionary": ["sing", "singers"],
+    "start": "sing",
+    "steps": [
+      { "round": 2, "side": "back", "letters": "er" },
+      { "round": 2, "side": "back", "letters": "s" }
+    ],
+    "expect": { "ok": false, "stepIndex": 0, "word": "singer" }
+  },
+  {
+    "name": "first word must be in the dictionary",
+    "dictionary": ["bear"],
+    "start": "brea",
+    "steps": [],
+    "expect": { "ok": false, "stepIndex": -1, "word": "brea" }
+  },
+  {
+    "name": "first word must have at least 2 letters",
+    "dictionary": ["a"],
+    "start": "a",
+    "steps": [],
+    "expect": { "ok": false, "stepIndex": -1, "word": "a" }
+  },
+  {
+    "name": "an empty step is rejected",
+    "dictionary": ["bear"],
+    "start": "bear",
+    "steps": [{ "round": 2, "side": "back", "letters": "" }],
+    "expect": { "ok": false, "stepIndex": 0, "word": "" }
+  }
+]
