@@ -1,7 +1,8 @@
-import { chain as C, exportRunJson } from '../../engine';
+import { chain as C } from '../../engine';
+import { RoundTable } from '../components';
 import type { RunState } from '../../engine';
 import { ChainView } from '../components';
-import { endRun, randomSeed, startRun } from '../store';
+import { endRun, exportCurrentRun, randomSeed, startRun } from '../store';
 
 /** GAME_OVER / WIN (P2-05): summary, restart with the same or a new seed, export. */
 export function EndScreen({ run }: { run: RunState }) {
@@ -10,7 +11,7 @@ export function EndScreen({ run }: { run: RunState }) {
   const roundsCleared = won ? run.round : Math.max(0, run.round - 1);
 
   const download = () => {
-    const blob = new Blob([exportRunJson(run)], { type: 'application/json' });
+    const blob = new Blob([exportCurrentRun()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -40,6 +41,10 @@ export function EndScreen({ run }: { run: RunState }) {
           </p>
         )}
         <ChainView chain={run.chain} />
+      </div>
+      <div className="panel">
+        <h2>Rounds</h2>
+        <RoundTable run={run} />
       </div>
       <div className="row">
         <button type="button" className="btn--primary" onClick={() => startRun(run.seed)}>

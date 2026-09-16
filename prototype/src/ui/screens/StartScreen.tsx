@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Card } from '../components';
-import { parseSeed, randomSeed, startRun, useStore } from '../store';
+import { loadRun, parseSeed, randomSeed, startRun, useStore } from '../store';
 
 /** Pre-run screen: seed input and Quick Start with the default loadout (P2-01). */
 export function StartScreen() {
   const { dictionary } = useStore();
   const [seedInput, setSeedInput] = useState(() => String(randomSeed()));
+  const [json, setJson] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
   const ready = dictionary.state === 'ready';
 
   return (
@@ -42,6 +44,30 @@ export function StartScreen() {
           Same seed → same tiles. Text seeds are hashed. Loadouts arrive with the Lexicon screen (M7).
         </p>
       </div>
+
+      <details className="panel">
+        <summary>Load an exported run</summary>
+        <textarea value={json} onChange={(e) => setJson(e.target.value)} rows={4} style={{ width: '100%', marginTop: 8 }} placeholder='paste a run export {"seed": …}' />
+        <div className="row">
+          <button
+            type="button"
+            className="btn--small btn--primary"
+            disabled={!ready || !json.trim()}
+            onClick={() => {
+              try {
+                loadRun(json);
+                setLoadError(null);
+              } catch (e) {
+                setLoadError(e instanceof Error ? e.message : String(e));
+              }
+            }}
+          >
+            Replay and take over
+          </button>
+          {loadError && <span style={{ color: 'var(--danger)' }}>{loadError}</span>}
+        </div>
+        <p className="muted">Add <code>?debug=1</code> to the URL for the designer panel (live balance, cheats, export).</p>
+      </details>
 
       <details className="panel">
         <summary>Theme sample</summary>

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { RunState } from '../engine';
 import { playCue } from './audio';
 import { BossIntroScreen, BossScreen, EndScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from './screens';
-import { endRun, loadDictionary, useStore } from './store';
+import { DebugPanel } from './components';
+import { debugEnabled, endRun, loadDictionary, useStore } from './store';
 
 /** Routes to one screen per run phase (spec §6). */
 export function App() {
@@ -28,9 +29,18 @@ export function App() {
     return undefined;
   }, [run?.phase]);
 
-  if (!run) return <StartScreen />;
+  const debug = debugEnabled();
+  if (!run) {
+    return (
+      <div>
+        <StartScreen />
+        {debug && <DebugPanel />}
+      </div>
+    );
+  }
   return (
     <div>
+      {debug && <DebugPanel />}
       {transition && (
         <div className="transition" aria-hidden>
           <div className="transition__text">BOSS ROUND</div>

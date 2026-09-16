@@ -4,7 +4,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
-import { createRun, dictionary as dictFns, lastError, reduce, defaultLoadout, rng as rngFns } from '../engine';
+import { createRun, dictionary as dictFns, exportRunJson, lastError, parseRunExport, reduce, replay, defaultLoadout, rng as rngFns } from '../engine';
 import { playCue } from './audio';
 import type { Action, Balance, CardSpec, Dictionary, EngineContent, PreRunLoadout, RunState } from '../engine';
 import { bossModifiers, cards, defaultBalance, inRunModifiers, letters, secretWords } from '../content';
@@ -26,12 +26,15 @@ export interface StoreState {
   dictionary: DictionaryStatus;
   balance: Balance;
   run: RunState | null;
+  /** The balance the current run was created with (exports carry it; live edits are logged as actions). */
+  runBalance: Balance | null;
 }
 
 let state: StoreState = {
   dictionary: { state: 'loading' },
   balance: defaultBalance,
   run: null,
+  runBalance: null,
 };
 
 const listeners = new Set<() => void>();
@@ -108,7 +111,7 @@ export function randomSeed(): number {
 }
 
 export function startRun(seed: number, loadout: PreRunLoadout = defaultLoadout): void {
-  setState({ run: autoAdvance(createRun(seed, loadout, content())) });
+  setState({ run: autoAdvance(createRun(seed, loadout, content())), runBalance: state.balance });
 }
 
 export function dispatch(action: Action): void {
@@ -138,7 +141,7 @@ function cueFor(run: RunState, action: Action): CardSpec | undefined {
 
 /** Back to the start screen. */
 export function endRun(): void {
-  setState({ run: null });
+  setState({ run: null, runBalance: null });
 }
 
 /** ROUND_START has no screen: the UI drives the START_ROUND arrow itself (spec §5). */
@@ -148,8 +151,38 @@ function autoAdvance(run: RunState): RunState {
   return r;
 }
 
+/**
+ * Live balance edit (DebugPanel). Outside a run it replaces the store's
+ * balance; inside a run it is dispatched as a DEBUG action so the change is
+ * logged and the run replays exactly.
+ */
 export function setBalance(balance: Balance): void {
   setState({ balance });
+  if (state.run) dispatch({ type: 'DEBUG', op: { kind: 'balance', balance } });
+}
+
+/** `?debug=1` enables the DebugPanel. */
+export function debugEnabled(): boolean {
+  try {
+    return new URLSearchParams(window.location.search).get('debug') === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Replay an exported run (P6-03) and take over from its final state. */
+export function loadRun(json: string): void {
+  const exp = parseRunExport(json);
+  const c = content();
+  const balance = exp.balance ?? c.balance;
+  const run = replay(exp, { ...c, balance });
+  // The run's live balance is whatever its last DEBUG edit set, else the starting one.
+  setState({ balance: run.balanceOverride ?? balance, runBalance: balance, run: autoAdvance(run) });
+}
+
+export function exportCurrentRun(): string {
+  if (!state.run) throw new Error('no run in progress');
+  return exportRunJson(state.run, state.runBalance ?? state.balance);
 }
 
 /** Inject a dictionary directly (tests, or a future "add word" admin hook). */

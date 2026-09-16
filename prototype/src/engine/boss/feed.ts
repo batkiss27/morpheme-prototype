@@ -39,6 +39,7 @@ export function feedOne(boss: Pick<BossState, 'rack' | 'queue' | 'cycle'>, chain
   let cycle = boss.cycle;
   let s = state;
   if (queue.length === 0) {
+    if (chainTiles.length === 0) return { rack: boss.rack.slice(), queue, cycle, rng: s }; // nothing can feed
     cycle += 1;
     [queue, s] = buildQueue(chainTiles, s, cycle);
     if (rules.vowelsToY) queue = applyVowelsToY(queue);

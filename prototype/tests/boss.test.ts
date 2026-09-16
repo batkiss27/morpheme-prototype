@@ -231,6 +231,15 @@ describe('feed', () => {
     expect(t.boss.endReason).toBe('overflow');
   });
 
+  it('an empty chain feeds nothing (boss reached with no word)', () => {
+    const { boss } = bossAt('ab');
+    const empty = { ...boss, rack: [], queue: [] };
+    const t = B.tick(empty, 12_000, [], rng.create(1));
+    expect(t.boss.rack).toEqual([]);
+    expect(t.boss.queue).toEqual([]);
+    expect(t.ended).toBe(false);
+  });
+
   it('the timer ends the round at zero', () => {
     const { boss, tiles } = bossAt('informal', { rackCap: 50 });
     const t = B.tick(boss, 90_000, tiles, rng.create(1));

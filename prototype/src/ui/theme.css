@@ -270,3 +270,20 @@ kbd { background: var(--panel-alt); border-radius: 3px; padding: 0 4px; font-siz
 .overlay { position: fixed; inset: 0; z-index: 20; background: rgba(15, 42, 58, 0.85); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .overlay__box { background: var(--panel); border-radius: var(--radius); padding: 16px 20px; max-width: 560px; width: 100%; max-height: 80vh; overflow: auto; }
 .overlay__box ul { margin: 0 0 8px; padding-left: 18px; }
+
+/* --- Debug panel (M6) ------------------------------------------------------- */
+.debug-toggle { position: fixed; right: 12px; bottom: 12px; z-index: 30; opacity: 0.7; font-size: 12px; }
+.debug { position: fixed; right: 0; top: 0; bottom: 0; width: 460px; max-width: 100vw; z-index: 30; background: var(--panel); border-left: 2px solid var(--accent-2); display: flex; flex-direction: column; box-shadow: -8px 0 24px rgba(0,0,0,0.4); }
+.debug__bar { display: flex; gap: 6px; align-items: center; padding: 8px 12px; background: var(--panel-alt); }
+.debug__body { padding: 12px; overflow: auto; font-size: 13px; }
+.debug__group { border-left: 1px solid var(--panel-alt); padding-left: 10px; margin: 4px 0; }
+.debug__row { display: flex; gap: 8px; align-items: flex-start; margin: 3px 0; flex-wrap: wrap; }
+.debug__key { min-width: 150px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; padding-top: 4px; }
+.debug__json { font-size: 11px; white-space: pre-wrap; word-break: break-all; max-height: 60vh; overflow: auto; background: var(--bg); padding: 8px; border-radius: var(--radius); }
+.debug input, .debug select { padding: 2px 6px; font-size: 12px; }
+textarea { font: inherit; font-size: 12px; color: var(--text); background: var(--bg); border: 1px solid var(--muted); border-radius: var(--radius); padding: 6px 8px; }
+.rounds th { text-align: left; padding: 4px 8px; color: var(--muted); font-weight: 600; font-size: 12px; }
+.rounds th:nth-child(n+3) { text-align: right; }
+.rounds td:nth-child(n+3) { text-align: right; }
+.rounds td:last-child { text-align: left; font-size: 12px; }
+.rounds__fail td { color: var(--danger); }

@@ -35,6 +35,7 @@ import type {
   CardTarget,
   Chain,
   CurrencySource,
+  DebugOp,
   EngineContent,
   PreRunLoadout,
   RoundResult,
@@ -121,7 +122,8 @@ type Step = { ok: true; state: RunState } | { ok: false; error: string };
 const ok = (state: RunState): Step => ({ ok: true, state });
 const fail = (error: string): Step => ({ ok: false, error });
 
-export function reduce(state: RunState, action: Action, content: EngineContent): RunState {
+export function reduce(state: RunState, action: Action, baseContent: EngineContent): RunState {
+  const content = state.balanceOverride ? { ...baseContent, balance: state.balanceOverride } : baseContent;
   const result = apply(state, action, content);
   const event: RunEvent = { seq: state.log.length, round: state.round, phase: state.phase, action };
   if (result.ok) {
@@ -446,6 +448,9 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       return ok(advanceRound({ ...state, boss: null }, balance));
     }
 
+    case 'DEBUG':
+      return debug(state, action.op, content);
+
     default:
       return fail(`unknown action ${(action as { type: string }).type}`);
   }
@@ -571,6 +576,53 @@ function settle(
   if (state.roundEffects.insurance) return { ...state, lastResult: { ...failed, outcome: 'insured' }, streak: 0 };
   if (state.lives > 0) return { ...state, lastResult: { ...failed, outcome: 'life_lost' }, streak: 0, lives: state.lives - 1 };
   return { ...state, lastResult: { ...failed, outcome: 'game_over' }, streak: 0 };
+}
+
+/** DebugPanel cheats (P6-01, P6-02). Any phase; the run stays replayable because they are logged. */
+function debug(state: RunState, op: DebugOp, content: EngineContent): Step {
+  switch (op.kind) {
+    case 'balance':
+      return ok({ ...state, balanceOverride: op.balance });
+    case 'currency':
+      return ok({ ...state, currency: Math.max(0, state.currency + op.amount) });
+    case 'lives':
+      return ok({ ...state, lives: Math.max(0, Math.floor(op.lives)) });
+    case 'card': {
+      if (!cards.cardSpec(content, op.cardId)) return fail(`unknown card ${op.cardId}`);
+      return ok({ ...state, cards: [...state.cards, { instanceId: `c${state.cardSeq}`, cardId: op.cardId }], cardSeq: state.cardSeq + 1 });
+    }
+    case 'modifier': {
+      if (!mods.modifierSpec(content, op.id)) return fail(`unknown modifier ${op.id}`);
+      if (state.inRun.includes(op.id)) return fail(`${op.id} is already held`);
+      return ok({ ...state, inRun: [...state.inRun, op.id] });
+    }
+    case 'round': {
+      const round = Math.floor(op.round);
+      if (round < 1 || round > content.balance.rounds.total) return fail(`round must be 1..${content.balance.rounds.total}`);
+      // Abandon whatever is in progress: hand back to the pool, fresh ROUND_START.
+      return ok({
+        ...state,
+        round,
+        phase: 'ROUND_START',
+        pool: tiles.returnTiles(state.pool, state.hand),
+        hand: [],
+        steps: [],
+        undo: [],
+        strainThisRound: 0,
+        roundEffects: {},
+        shop: null,
+        boss: null,
+        flags: { ...state.flags, bossJumpPending: false },
+      });
+    }
+    case 'boss_modifier': {
+      if (state.phase !== 'BOSS_INTRO' || !state.boss) return fail('force a boss modifier at the boss intro');
+      if (!content.bossModifiers.some((m) => m.id === op.id)) return fail(`unknown boss modifier ${op.id}`);
+      return ok({ ...state, boss: { ...state.boss, modifierId: op.id } });
+    }
+    default:
+      return fail(`unknown debug op ${(op as { kind: string }).kind}`);
+  }
 }
 
 /** Score the boss round from its placed-word points and settle pass/fail (P4-06). */

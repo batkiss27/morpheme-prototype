@@ -405,6 +405,10 @@ port. Aim for every rule in `DESIGN.md` §2 to have a named test.
   match the spreadsheet within rounding. This is the guard against balance drift.
 - **Determinism test:** two runs with the same seed and action list produce
   identical logs.
+- **Export format (v2):** `{ version: 2, seed, loadout, balance, actions[] }`.
+  `balance` is the balance the run started with; DebugPanel edits during the
+  run are `DEBUG { kind: 'balance' }` actions inside `actions`, so a replay is
+  exact. `replayWithHistory` derives the per-round table from the actions.
 - **No UI tests** in the prototype beyond "App renders without crashing".
 
 Run with `npm test`. CI is not required; `npm test` must pass before a story is
@@ -462,6 +466,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
 | 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
 | 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
+| 2026-09-16 | DebugPanel (`?debug=1`): cheats (currency, lives, card, modifier, skip to round, force boss modifier) and live balance edits are `DEBUG` actions, logged like any other; `RunState.balanceOverride` holds the live balance and `reduce` swaps it into content. The store keeps the run's starting balance for exports. | §6, §9 |
 | 2026-09-16 | In-run modifiers: content rows carry `hookId`; `engine/modifiers/registry.ts` implements hook points `morphemeValue`, `multiplierBase`, `extensionBonus`, `strain`, `roundCurrency`, `onNaturalRound`, `bossRules`, `reward`, folded in acquisition order (`state.inRun`). `scoringInputs(state, content)` is the one place the reducer and the screens get modifier-aware scoring inputs. | §7 |
 | 2026-09-16 | Scoring with modifiers: word points are summed per morpheme with a per-morpheme multiplier (Suffix/Prefix Bias, Inflection, Vowel Harmony); the multiplier base is `balance + Agglutination + Momentum + Chain Lightning`; Mirror multiplies the front+back bonus. The workbook's flat "in-run multiplier" stays a scenario assumption. | §7 |
 | 2026-09-16 | Economy (Economy tab): a passed regular round earns round clear + margin bonus (per 25 %, cap 4) + natural streak (cap 5) + natural word dividend (4+ morphemes, natural chain) + extension payout (+1 per extra morpheme) + Coinage; Bank doubles the total. Boss pass earns the boss clear bonus. Failed rounds earn nothing. `RoundResult.currencySources` lists them. | §5, §7 |
@@ -483,6 +488,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | Date | Version | Change |
 |---|---|---|
 | 2026-09-16 | 0.1 | Initial spec drafted from DESIGN.md rev 3 and Morpheme_Master.xlsx. |
+| 2026-09-16 | 0.8 | M6 landed. §9: export v2 with balance and the history replay. §6: DebugPanel, load-run on StartScreen, per-round table on EndScreen, boss-feed readout on RoundScreen. |
 | 2026-09-16 | 0.7 | M5 landed. §5: `BUY_IN_RUN`, reward picks, boss jump. §7: hook points and economy rules. Decision log: modifiers, economy, streak rule, rewards, secret words. |
 | 2026-09-16 | 0.6 | M4 landed. §5: boss actions and placement/feed semantics. §6: BossIntroScreen and BossScreen exist; the 1 s transition; BOSS_REWARD still a stub until M5. Decision log: board, placement, feed, ticking. |
 | 2026-09-16 | 0.5 | Balance retune (hand 10, T1 = 4) and the Steep Curve risk modifier recorded; DESIGN.md rev 4. |

@@ -8,6 +8,7 @@ import { defaultBalance } from '../src/content';
 import { reduce } from '../src/engine';
 import type { RunState } from '../src/engine';
 import { App } from '../src/ui/App';
+import { DebugPanel, RoundTable } from '../src/ui/components';
 import { BossIntroScreen, BossScreen, EndScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
 import { setDictionary, startRun, getState } from '../src/ui/store';
 import { balanceWith, withCards } from './helpers';
@@ -96,6 +97,14 @@ describe('screens render', () => {
     expect(renderToString(<EndScreen run={st.forfeited!} />)).toContain('Run over');
     expect(renderToString(<EndScreen run={st.won!} />)).toContain('You win');
   });
+  it('EndScreen shows the per-round table; DebugPanel renders collapsed', () => {
+    const html = renderToString(<EndScreen run={st.forfeited!} />);
+    expect(html).toContain('Rounds');
+    expect(renderToString(<RoundTable run={st.scored!} />)).toContain('<table');
+    expect(renderToString(<DebugPanel />)).toContain('debug');
+    expect(renderToString(<RoundScreen run={st.extendWithStep!} />)).toContain('Next boss');
+  });
+
   it('App routes by phase through the store', () => {
     expect(renderToString(<App />)).toContain('Quick Start');
     startRun(5);

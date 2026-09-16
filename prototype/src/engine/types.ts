@@ -340,6 +340,8 @@ export interface StepSnapshot {
   strainThisRound: number;
   chainDirty: boolean;
   roundEffects: RoundEffects;
+  /** Live balance edits from the DebugPanel; replaces `content.balance` for this run. */
+  balanceOverride?: Balance;
 }
 
 /** Score breakdown for the round just played (spec §6 ScoreScreen). */
@@ -412,6 +414,8 @@ export interface RunState {
    */
   chainDirty: boolean;
   roundEffects: RoundEffects;
+  /** Live balance edits from the DebugPanel; replaces `content.balance` for this run. */
+  balanceOverride?: Balance;
 }
 
 // ---------------------------------------------------------------------------
@@ -451,7 +455,18 @@ export type Action =
   /** End the boss early. `wordPoints` overrides the placed total (debug / tests only). */
   | { type: 'END_BOSS'; wordPoints?: number }
   /** Pick one of the offered in-run modifiers (Polyglot: twice). */
-  | { type: 'PICK_MODIFIER'; id?: InRunModifierId };
+  | { type: 'PICK_MODIFIER'; id?: InRunModifierId }
+  /** DebugPanel cheats (M6). Logged like any action so replays stay exact. */
+  | { type: 'DEBUG'; op: DebugOp };
+
+export type DebugOp =
+  | { kind: 'balance'; balance: Balance }
+  | { kind: 'currency'; amount: number }
+  | { kind: 'lives'; lives: number }
+  | { kind: 'card'; cardId: CardId }
+  | { kind: 'modifier'; id: InRunModifierId }
+  | { kind: 'round'; round: number }
+  | { kind: 'boss_modifier'; id: string };
 
 export type ActionType = Action['type'];
 
