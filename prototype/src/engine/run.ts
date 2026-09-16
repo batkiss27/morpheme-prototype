@@ -22,6 +22,7 @@ import * as boss from './boss';
 import * as cards from './cards';
 import * as chainMod from './chain';
 import * as economy from './economy';
+import * as loadoutFns from './loadout';
 import * as mods from './modifiers';
 import * as reward from './reward';
 import * as rng from './rng';
@@ -46,7 +47,7 @@ import type {
   Tile,
 } from './types';
 
-export const defaultLoadout: PreRunLoadout = { tileModifiers: [], categories: {} };
+export const defaultLoadout: PreRunLoadout = { tileModifiers: [], categories: {}, risks: {}, challenges: [] };
 
 // ---------------------------------------------------------------------------
 // Creation
@@ -59,9 +60,9 @@ export function createRun(seed: number, loadout: PreRunLoadout, content: EngineC
     rng: rng.create(seed),
     round: 1,
     phase: 'ROUND_START',
-    lives: balance.lives.base + (loadout.categories.second_breath ?? 0),
+    lives: loadoutFns.lives(loadout, balance),
     currency: 0,
-    pool: tiles.createPool({ letters: content.letters }, loadout),
+    pool: loadoutFns.applyToPool(loadout, tiles.createPool({ letters: content.letters }, loadout)),
     hand: [],
     destroyed: [],
     chain: null,
@@ -82,7 +83,14 @@ export function createRun(seed: number, loadout: PreRunLoadout, content: EngineC
     strainThisRound: 0,
     chainDirty: false,
     roundEffects: {},
+    freeRedraws: 0,
   };
+}
+
+/** The round's threshold for this run (Steep Curve applied). */
+export function thresholdFor(state: RunState, content: EngineContent, round = state.round): number {
+  const balance = state.balanceOverride ?? content.balance;
+  return scoring.threshold(round, balance, loadoutFns.thresholdScale(state.preRun, balance));
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +160,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         round = Math.min(balance.rounds.total, Math.ceil(round / balance.rounds.bossEvery) * balance.rounds.bossEvery);
         flags = { ...flags, bossJumpPending: false };
       }
-      const base: RunState = { ...state, round, flags, steps: [], undo: [], strainThisRound: 0, roundEffects: {}, shop: null };
+      const base: RunState = { ...state, round, flags, steps: [], undo: [], strainThisRound: 0, roundEffects: {}, shop: null, freeRedraws: loadoutFns.freeRedraws(state.preRun, balance) };
       if (scoring.isBossRound(round, balance)) {
         const [mod, r1] = boss.rollModifier(content.bossModifiers, state.rng);
         const bossState: BossState = {
@@ -174,7 +182,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         };
         return ok({ ...base, phase: 'BOSS_INTRO', boss: bossState, rng: r1 });
       }
-      const d = tiles.draw(state.pool, balance.hand.size, state.rng);
+      const d = tiles.draw(state.pool, loadoutFns.handSize(state.preRun, balance), state.rng);
       return ok({ ...base, phase: 'EXTEND', pool: d.pool, hand: d.drawn, rng: d.rng });
     }
 
@@ -212,6 +220,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
           inRunMult: inputs.inRunMult,
           multiplierBase: inputs.base,
           extensionBonusMult: inputs.extensionBonusMult,
+          thresholdScale: loadoutFns.thresholdScale(state.preRun, balance),
         },
         balance,
       );
@@ -256,6 +265,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
           strainCount: 0,
           extension: { front: 0, back: 0 },
           inRunMult: inRunMultiplier(state),
+          thresholdScale: loadoutFns.thresholdScale(state.preRun, balance),
         },
         balance,
       );
@@ -273,6 +283,15 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
     case 'USE_CARD':
       return useCard(state, action.instanceId, action.target ?? {}, content);
 
+    case 'REDRAW': {
+      if (state.phase !== 'EXTEND') return wrong();
+      if (state.freeRedraws <= 0) return fail('no free redraw left this round');
+      if (state.steps.length > 0) return fail('a redraw must happen before playing a step');
+      const pool = tiles.returnTiles(state.pool, state.hand);
+      const d = tiles.draw(pool, loadoutFns.handSize(state.preRun, balance), state.rng);
+      return ok({ ...state, pool: d.pool, hand: d.drawn, rng: d.rng, freeRedraws: state.freeRedraws - 1 });
+    }
+
     case 'CONTINUE': {
       if (state.phase !== 'SCORED' && state.phase !== 'BOSS_END') return wrong();
       const result = state.lastResult;
@@ -283,14 +302,15 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         return ok(state.phase === 'SCORED' ? advanceRound(state, balance) : { ...state, phase: 'ROUND_START', boss: null });
       }
       if (state.phase === 'BOSS_END') return ok({ ...state, phase: 'BOSS_REWARD' });
-      const built = shopMod.buildShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content) });
+      const priceMult = loadoutFns.priceMult(state.preRun, balance);
+      const built = shopMod.buildShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), priceMult });
       let shop = built.shop;
       let r = built.rng;
       const criterion = result.criteriaMet[0];
       if (criterion) {
         const slot = reward.buildShopSlotOffer({ ...state, rng: r }, content);
         r = slot.rng;
-        if (slot.modifierId) shop = { ...shop, inRunOffer: { modifierId: slot.modifierId, price: balance.shop.inRunSlotPrice, sold: false, criterion } };
+        if (slot.modifierId) shop = { ...shop, inRunOffer: { modifierId: slot.modifierId, price: shopMod.scaledPrice(balance.shop.inRunSlotPrice, priceMult), sold: false, criterion } };
       }
       return ok({ ...state, phase: 'SHOP', shop, rng: r });
     }
@@ -344,7 +364,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.phase !== 'SHOP' || !state.shop) return wrong();
       const price = state.shop.rerollPrice;
       if (state.currency < price) return fail(`not enough currency (${price} needed)`);
-      const built = shopMod.rerollShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), previous: state.shop });
+      const built = shopMod.rerollShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), previous: state.shop, priceMult: loadoutFns.priceMult(state.preRun, balance) });
       return ok({ ...state, currency: state.currency - price, shop: built.shop, rng: built.rng });
     }
 
@@ -382,7 +402,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.phase !== 'BOSS_INTRO' || !state.boss) return wrong();
       const b = state.boss;
       const mod = content.bossModifiers.find((m) => m.id === b.modifierId);
-      const rules = mods.bossRules(state, content, boss.applyModifier(boss.baseRules(b.bossNumber, balance), mod));
+      const rules = mods.bossRules(state, content, loadoutFns.bossRules(state.preRun, balance, boss.applyModifier(boss.baseRules(b.bossNumber, balance), mod)));
       const chainTiles = state.chain?.tiles ?? [];
       const board = state.chain ? boss.placeStarter(b.board, boss.starterTiles(state.chain, b.bossNumber, balance, rules)) : b.board;
       let [queue, r1] = boss.buildQueue(chainTiles, state.rng, 1);
@@ -632,7 +652,14 @@ function finishBoss(state: RunState, wordPoints: number, reason: 'timer' | 'over
   const morphemes = state.chain ? chainMod.morphemeCount(state.chain) : 1;
   const base = mods.multiplierBase(state, content);
   const breakdown = scoring.scoreBoss(
-    { round: state.round, bossWordPoints: wordPoints, morphemes, inRunMult: inRunMultiplier(state), multiplierBase: base },
+    {
+      round: state.round,
+      bossWordPoints: wordPoints,
+      morphemes,
+      inRunMult: inRunMultiplier(state),
+      multiplierBase: base,
+      thresholdScale: loadoutFns.thresholdScale(state.preRun, balance),
+    },
     balance,
   );
   const notes = base !== balance.scoring.multiplierBase ? [`multiplier base ${base.toFixed(2)}`] : [];

@@ -53,6 +53,12 @@ export interface BuildShopInput {
   heldTypes: readonly CardType[];
   /** Existing shop when rerolling (keeps the tile action and reroll count). */
   previous?: ShopState;
+  /** Loadout price multiplier (Treasury discount, Inflation). */
+  priceMult?: number;
+}
+
+export function scaledPrice(price: number, mult = 1): number {
+  return Math.max(0, Math.ceil(price * mult));
 }
 
 export function buildOffers(input: BuildShopInput): { offers: ShopOffer[]; rng: RngState } {
@@ -64,28 +70,30 @@ export function buildOffers(input: BuildShopInput): { offers: ShopOffer[]; rng: 
     const pool = forceExtension ? cards.filter((c) => c.type === 'extension') : cards;
     let card: CardSpec | undefined;
     [card, s] = rollCard(s, pool.length > 0 ? pool : cards, balance);
-    if (card) offers.push({ cardId: card.id, price: card.price, sold: false });
+    if (card) offers.push({ cardId: card.id, price: scaledPrice(card.price, input.priceMult), sold: false });
   }
   return { offers, rng: s };
 }
 
-export function rollTileAction(state: RngState, balance: Balance): [TileActionOffer, RngState] {
+export function rollTileAction(state: RngState, balance: Balance, priceMult = 1): [TileActionOffer, RngState] {
   const [k, next] = rng.int(state, 2);
   return [
-    k === 0 ? { kind: 'add_tile', price: balance.shop.addTile, sold: false } : { kind: 'remove_tile', price: balance.shop.removeTile, sold: false },
+    k === 0
+      ? { kind: 'add_tile', price: scaledPrice(balance.shop.addTile, priceMult), sold: false }
+      : { kind: 'remove_tile', price: scaledPrice(balance.shop.removeTile, priceMult), sold: false },
     next,
   ];
 }
 
-export function rerollPrice(rerolls: number, balance: Balance): number {
-  return balance.shop.rerollBase + balance.shop.rerollIncrement * rerolls;
+export function rerollPrice(rerolls: number, balance: Balance, priceMult = 1): number {
+  return scaledPrice(balance.shop.rerollBase + balance.shop.rerollIncrement * rerolls, priceMult);
 }
 
 /** A fresh shop after a regular round. */
 export function buildShop(input: BuildShopInput): { shop: ShopState; rng: RngState } {
   const built = buildOffers(input);
-  const [tileAction, s] = rollTileAction(built.rng, input.balance);
-  return { shop: { offers: built.offers, tileAction, inRunOffer: null, rerolls: 0, rerollPrice: rerollPrice(0, input.balance) }, rng: s };
+  const [tileAction, s] = rollTileAction(built.rng, input.balance, input.priceMult);
+  return { shop: { offers: built.offers, tileAction, inRunOffer: null, rerolls: 0, rerollPrice: rerollPrice(0, input.balance, input.priceMult) }, rng: s };
 }
 
 /** The same shop with new card offers (tile action stays). */
@@ -93,7 +101,7 @@ export function rerollShop(input: BuildShopInput & { previous: ShopState }): { s
   const built = buildOffers(input);
   const rerolls = input.previous.rerolls + 1;
   return {
-    shop: { ...input.previous, offers: built.offers, rerolls, rerollPrice: rerollPrice(rerolls, input.balance) },
+    shop: { ...input.previous, offers: built.offers, rerolls, rerollPrice: rerollPrice(rerolls, input.balance, input.priceMult) },
     rng: built.rng,
   };
 }

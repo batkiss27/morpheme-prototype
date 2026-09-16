@@ -9,7 +9,7 @@ import { reduce } from '../src/engine';
 import type { RunState } from '../src/engine';
 import { App } from '../src/ui/App';
 import { DebugPanel, RoundTable } from '../src/ui/components';
-import { BossIntroScreen, BossScreen, EndScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from '../src/ui/screens';
+import { BossIntroScreen, BossScreen, EndScreen, LexiconScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen } from '../src/ui/screens';
 import { setDictionary, startRun, getState } from '../src/ui/store';
 import { balanceWith, withCards } from './helpers';
 import { anyDict, makeContent, newRun, playFromHand, playRegularRound } from './run-driver';
@@ -49,8 +49,12 @@ describe('screens render', () => {
   setDictionary(anyDict);
   const st = states();
 
-  it('StartScreen', () => {
-    expect(renderToString(<StartScreen />)).toContain('Quick Start');
+  it('LexiconScreen', () => {
+    const html = renderToString(<LexiconScreen />);
+    expect(html).toContain('Quick Start');
+    expect(html).toContain('Steep Curve');
+    expect(html).toContain('Second Breath');
+    expect(html).toContain('Lexicon points');
   });
   it('RoundScreen (empty, with a step, after a rejected step)', () => {
     expect(renderToString(<RoundScreen run={st.extendEmpty!} />)).toContain('Play first word');

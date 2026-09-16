@@ -9,6 +9,7 @@
  *   hand     → Scoring tab row 13
  *   preRun   → Pre-Run Modifiers tab (risk modifiers)
  *   reward   → In-Run Modifiers tab (offer rules)
+ *   meta     → Tiles tab (level costs), Achievements tab note (base Lexicon award)
  *   boss     → Boss Round Modifiers tab baseline note + DESIGN.md §2.6
  *   shop     → Shops tab
  *   economy  → Economy tab
@@ -87,11 +88,27 @@ export interface Balance {
     rarityOddsByBoss: Record<RarityKey, number>[];
   };
   preRun: {
-    /**
-     * Steep Curve risk modifier (Pre-Run Modifiers tab): all thresholds are
-     * scaled and the loadout gains points. Index = level − 1. Wired in M7.
-     */
+    /** Steep Curve risk modifier: all thresholds are scaled and the loadout gains points. Index = level − 1. */
     steepCurve: { thresholdScale: number[]; loadoutPoints: number[] };
+    /** Treasury (Pre-Run Modifiers tab), cumulative by level. */
+    treasury: { roundClearBonus: number; streakMult: number; shopDiscount: number; dividendMult: number };
+    /** Substrate: hand size per level and the level from which a free redraw is granted. */
+    substrate: { handBonus: number[]; freeRedrawFromLevel: number };
+    /** Tempo: boss timer / feed multipliers per level, rack bonus at L4. */
+    tempo: { timerMult: number[]; feedMult: number[]; rackBonus: number[] };
+    /** Challenge modifier numbers. */
+    challenges: { tightClockTimerMult: number; inflationPriceMult: number };
+  };
+  meta: {
+    /** Lexicon-point cost to reach letter / category level 1..4 (Tiles tab). */
+    levelCosts: number[];
+    loadoutBudgetStart: number;
+    loadoutBudgetCap: number;
+    modifiedLettersCap: number;
+    /** Base Lexicon award per run (Achievements tab note). */
+    lexiconPerRoundCleared: number;
+    lexiconPerBossBeaten: number;
+    lexiconPerWin: number;
   };
   economy: {
     roundClear: number;
@@ -164,6 +181,19 @@ export const defaultBalance: Balance = {
   },
   preRun: {
     steepCurve: { thresholdScale: [1.15, 1.3, 1.5, 1.75], loadoutPoints: [1, 2, 3, 4] },
+    treasury: { roundClearBonus: 1, streakMult: 2, shopDiscount: 0.1, dividendMult: 2 },
+    substrate: { handBonus: [1, 2, 2, 3], freeRedrawFromLevel: 3 },
+    tempo: { timerMult: [1.1, 1.2, 1.2, 1.3], feedMult: [1, 1, 1.1, 1.2], rackBonus: [0, 0, 0, 1] },
+    challenges: { tightClockTimerMult: 0.7, inflationPriceMult: 1.5 },
+  },
+  meta: {
+    levelCosts: [2, 4, 7, 11],
+    loadoutBudgetStart: 4,
+    loadoutBudgetCap: 20,
+    modifiedLettersCap: 8,
+    lexiconPerRoundCleared: 1,
+    lexiconPerBossBeaten: 2,
+    lexiconPerWin: 5,
   },
   economy: {
     roundClear: 3,

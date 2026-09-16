@@ -53,19 +53,21 @@ export interface TileModifierSpec {
   name: string;
   level: 1 | 2 | 3 | 4;
   effect: string;
+  /** Has an effect in the prototype engine (others are data only). */
+  implemented?: boolean;
 }
 
 export const tileModifiers: TileModifierSpec[] = [
-  { id: 'plus1', name: '+1', level: 1, effect: 'Flat +1 to base value.' },
+  { id: 'plus1', implemented: true, name: '+1', level: 1, effect: 'Flat +1 to base value.' },
   { id: 'gilded', name: 'Gilded', level: 1, effect: 'Earn +1 currency each round this tile is in the word.' },
   { id: 'anchored', name: 'Anchored', level: 1, effect: '×2 value if the tile is the first or last letter of the word.' },
   { id: 'weighted', name: 'Weighted', level: 1, effect: 'This tile is 50% more likely to be drawn.' },
-  { id: 'plus2', name: '+2', level: 2, effect: 'Flat +2 to base value.' },
-  { id: 'vowel_wild', name: 'Vowel Wild', level: 2, effect: 'Tile can be played as any vowel (vowels only).' },
+  { id: 'plus2', implemented: true, name: '+2', level: 2, effect: 'Flat +2 to base value.' },
+  { id: 'vowel_wild', implemented: true, name: 'Vowel Wild', level: 2, effect: 'Tile can be played as any vowel (vowels only).' },
   { id: 'trade', name: 'Trade', level: 2, effect: 'When drawn and not played, refund 1 currency.' },
   { id: 'harmonic', name: 'Harmonic', level: 2, effect: '×1.5 if adjacent to a tile with the same base value.' },
   { id: 'sticky', name: 'Sticky', level: 2, effect: 'Stays in hand between rounds if unplayed.' },
-  { id: 'plus3', name: '+3', level: 3, effect: 'Flat +3 to base value.' },
+  { id: 'plus3', implemented: true, name: '+3', level: 3, effect: 'Flat +3 to base value.' },
   { id: 'compounding', name: 'Compounding', level: 3, effect: 'Gains +1 value each round it remains in the word.' },
   { id: 'mutable', name: 'Mutable', level: 3, effect: 'Once per round, may be changed to an alphabetically adjacent letter for free.' },
   { id: 'silent', name: 'Silent', level: 3, effect: 'Counts for scoring but is ignored for dictionary validity.' },
@@ -74,7 +76,7 @@ export const tileModifiers: TileModifierSpec[] = [
   { id: 'wild', name: 'Wild', level: 4, effect: 'Tile can be played as any letter (scores as base value 1).' },
   { id: 'stressed', name: 'Stressed', level: 4, effect: '+0.5× to the round multiplier while this tile is in the word.' },
   { id: 'tonal', name: 'Tonal', level: 4, effect: '×2 for the morpheme this tile is in, if that morpheme has no other Tonal tile.' },
-  { id: 'heavy', name: 'Heavy', level: 4, effect: 'Tile scores double its base value.' },
+  { id: 'heavy', implemented: true, name: 'Heavy', level: 4, effect: 'Tile scores double its base value.' },
   { id: 'cursed', name: 'Cursed', level: 4, effect: '×2 value, but the tile must be played if drawn.' },
   { id: 'volatile', name: 'Volatile', level: 4, effect: 'Value is randomized each round between 0 and 3× base.' },
   { id: 'twin', name: 'Twin', level: 4, effect: 'When played, a copy of this tile (with modifiers) is added to the pool.' },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { boss as B, inRunMultiplier, lastError, modifiers as M, scoring, tiles as T, chain as C } from '../../engine';
+import { boss as B, inRunMultiplier, lastError, modifiers as M, scoring, thresholdFor, tiles as T, chain as C } from '../../engine';
 import type { Dir, RunState } from '../../engine';
 import { Tile } from '../components';
 import { content, dispatch, getState, useStore } from '../store';
@@ -91,7 +91,7 @@ export function BossScreen({ run }: { run: RunState }) {
   const usedIds = new Set(resolved?.ok ? resolved.value.used.map((t) => t.id) : []);
   const offBoard = cursor ? pendingCells.length < cursor.letters.length : false;
 
-  const threshold = scoring.threshold(run.round, balance);
+  const threshold = thresholdFor(run, content());
   const running = scoring.scoreBoss(
     {
       round: run.round,

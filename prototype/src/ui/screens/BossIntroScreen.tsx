@@ -1,4 +1,4 @@
-import { scoring, tiles as T } from '../../engine';
+import { thresholdFor, tiles as T } from '../../engine';
 import type { RunState } from '../../engine';
 import { CardPanel, ChainView, RunHeader } from '../components';
 import { content, dispatch, useStore } from '../store';
@@ -20,7 +20,7 @@ export function BossIntroScreen({ run }: { run: RunState }) {
           Boss {b.bossNumber} <span className="badge badge--warn">timed round</span>
         </h2>
         <p>
-          Beat <strong>{scoring.threshold(run.round, balance).toLocaleString()}</strong> by placing words on the board with your word's
+          Beat <strong>{thresholdFor(run, content()).toLocaleString()}</strong> by placing words on the board with your word's
           letters. {Math.round(balance.boss.timerMs / 1000)} s on the clock; a new tile every {(feed / 1000).toFixed(1)} s
           {b.bossNumber === 1 ? ' (before modifiers)' : ''}.
         </p>

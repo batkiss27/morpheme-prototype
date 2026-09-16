@@ -30,10 +30,11 @@ export function bossesBefore(round: number, balance: Balance): number {
   return Math.floor((round - 1) / balance.rounds.bossEvery);
 }
 
-export function threshold(round: number, balance: Balance): number {
+/** `scale` is the loadout's threshold multiplier (Steep Curve), 1 by default. */
+export function threshold(round: number, balance: Balance, scale = 1): number {
   const s = balance.scoring;
   const boss = isBossRound(round, balance) ? s.bossThresholdFactor : 1;
-  return roundHalfUp(s.round1Threshold * Math.pow(s.thresholdGrowth, round - 1) * boss);
+  return roundHalfUp(s.round1Threshold * Math.pow(s.thresholdGrowth, round - 1) * boss * scale);
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +145,8 @@ export interface RegularScoreInput {
   multiplierBase?: number;
   /** Multiplier applied to the extension bonus (Mirror). */
   extensionBonusMult?: number;
+  /** Threshold scale from the loadout (Steep Curve). */
+  thresholdScale?: number;
 }
 
 export type ScoreBreakdown = Omit<RoundResult, 'outcome' | 'currencyEarned' | 'currencySources' | 'notes' | 'criteriaMet'>;
@@ -154,7 +157,7 @@ export function scoreRegular(input: RegularScoreInput, balance: Balance): ScoreB
   const extBonus = extensionBonus(input.extension, balance) * (input.extensionBonusMult ?? 1);
   const flat = input.flatBonus ?? 0;
   const score = roundHalfUp(input.wordPoints * morphemeMult * extBonus * input.inRunMult) + flat;
-  const t = threshold(input.round, balance);
+  const t = threshold(input.round, balance, input.thresholdScale);
   return {
     round: input.round,
     kind: 'regular',
@@ -179,6 +182,7 @@ export interface BossScoreInput {
   inRunMult: number;
   flatBonus?: number;
   multiplierBase?: number;
+  thresholdScale?: number;
 }
 
 export function scoreBoss(input: BossScoreInput, balance: Balance): ScoreBreakdown {
@@ -186,7 +190,7 @@ export function scoreBoss(input: BossScoreInput, balance: Balance): ScoreBreakdo
   const morphemeMult = morphemeMultiplier(effM, balance, input.multiplierBase);
   const flat = input.flatBonus ?? 0;
   const score = roundHalfUp(input.bossWordPoints * morphemeMult * input.inRunMult) + flat;
-  const t = threshold(input.round, balance);
+  const t = threshold(input.round, balance, input.thresholdScale);
   return {
     round: input.round,
     kind: 'boss',

@@ -1,6 +1,6 @@
-import { scoring } from '../../engine';
+import { scoring, thresholdFor } from '../../engine';
 import type { RunState } from '../../engine';
-import { useStore } from '../store';
+import { content, useStore } from '../store';
 import { ModifierPanel } from './ModifierPanel';
 
 /** Round, threshold, lives, currency, streak — shown on every in-run screen. */
@@ -14,7 +14,7 @@ export function RunHeader({ run }: { run: RunState }) {
         {boss && <span className="badge badge--warn">Boss {scoring.bossNumber(run.round, balance)}</span>}
       </span>
       <span>
-        Threshold <strong>{scoring.threshold(run.round, balance).toLocaleString()}</strong>
+        Threshold <strong>{thresholdFor(run, content()).toLocaleString()}</strong>
       </span>
       <span>Currency <strong>{run.currency}</strong></span>
       <span>Lives <strong>{run.lives}</strong></span>

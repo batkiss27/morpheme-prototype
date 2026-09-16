@@ -6,10 +6,10 @@
  */
 
 import type { Balance } from '../content/balance';
-import type { LetterSpec } from '../content/tiles';
+import type { LetterSpec, TileModifierSpec } from '../content/tiles';
 import type { RngState } from './rng';
 
-export type { Balance, LetterSpec, RngState };
+export type { Balance, LetterSpec, RngState, TileModifierSpec };
 
 // ---------------------------------------------------------------------------
 // Tiles
@@ -184,12 +184,99 @@ export interface CurrencySource {
   amount: number;
 }
 
+// ---------------------------------------------------------------------------
+// Pre-run (content/preRunModifiers.ts mirrors the *Pre-Run Modifiers* tab)
+// ---------------------------------------------------------------------------
+
+export type PreRunCategoryId = 'second_breath' | 'treasury' | 'substrate' | 'tempo';
+export type RiskId = 'steep_curve';
+export type ChallengeId = 'vowel_thief' | 'tight_clock' | 'no_breath' | 'inflation';
+
+export interface PreRunCategorySpec {
+  id: PreRunCategoryId;
+  name: string;
+  /** Effect text per level (index = level − 1). Levels are cumulative. */
+  levels: string[];
+}
+
+export interface RiskSpec {
+  id: RiskId;
+  name: string;
+  levels: string[];
+  /** Loadout points granted per level (index = level − 1). */
+  points: number[];
+}
+
+export interface ChallengeSpec {
+  id: ChallengeId;
+  name: string;
+  effect: string;
+  points: number;
+}
+
 /** Pre-run loadout chosen on the Lexicon screen (M7). Quick Start uses the default. */
 export interface PreRunLoadout {
   /** Tile modifiers applied to one tile of the given letter (D3). */
   tileModifiers: { letter: Letter; modifier: TileModifierId }[];
-  /** Pre-run category levels, 0 = not taken. */
-  categories: Partial<Record<'second_breath' | 'treasury' | 'substrate' | 'tempo', number>>;
+  /** Activated pre-run category levels, 0 = not taken (≤ the unlocked level). */
+  categories: Partial<Record<PreRunCategoryId, number>>;
+  /** Risk modifier levels (grant loadout points). */
+  risks?: Partial<Record<RiskId, number>>;
+  /** Opt-in challenge modifiers (grant loadout points; unlocked after a win). */
+  challenges?: ChallengeId[];
+}
+
+// ---------------------------------------------------------------------------
+// Meta-progression (engine/meta.ts, persisted by the UI)
+// ---------------------------------------------------------------------------
+
+export type AchievementPredicate =
+  | 'rounds_cleared' | 'bosses_beaten' | 'max_morphemes' | 'max_letters' | 'won' | 'won_deathless'
+  | 'won_no_extension_cards' | 'won_unaided' | 'two_step' | 'both_ends' | 'triple_step' | 'natural_morphemes'
+  | 'secret_word' | 'trapdoor';
+
+export interface AchievementSpec {
+  id: string;
+  name: string;
+  category: 'progression' | 'skill' | 'abstention' | 'easter_egg';
+  condition: string;
+  predicate: AchievementPredicate;
+  params: Record<string, number | string>;
+  reward: {
+    lexicon?: number;
+    loadout?: number;
+    unlockCards?: CardId[];
+    unlockModifiers?: InRunModifierId[];
+    challenges?: boolean;
+  };
+}
+
+export interface MetaState {
+  version: number;
+  lexiconPoints: number;
+  /** Letter levels 0–4 (blank excluded). */
+  letterLevels: Partial<Record<Letter, number>>;
+  /** Unlocked pre-run category levels 0–4. */
+  categoryLevels: Partial<Record<PreRunCategoryId, number>>;
+  unlockedCards: CardId[];
+  unlockedModifiers: InRunModifierId[];
+  /** Achievement ids ever earned. */
+  achievements: string[];
+  loadoutBudget: number;
+  challengesUnlocked: boolean;
+  runs: number;
+  wins: number;
+  /** Last loadout used, restored on the Lexicon screen. */
+  loadout: PreRunLoadout;
+}
+
+/** What a finished run awarded (EndScreen). */
+export interface RunAwards {
+  lexiconPoints: number;
+  /** Achievement ids earned for the first time. */
+  achievements: string[];
+  loadoutPoints: number;
+  challengesUnlocked: boolean;
 }
 
 export interface ShopOffer {
@@ -340,8 +427,6 @@ export interface StepSnapshot {
   strainThisRound: number;
   chainDirty: boolean;
   roundEffects: RoundEffects;
-  /** Live balance edits from the DebugPanel; replaces `content.balance` for this run. */
-  balanceOverride?: Balance;
 }
 
 /** Score breakdown for the round just played (spec §6 ScoreScreen). */
@@ -408,6 +493,8 @@ export interface RunState {
   lastResult: RoundResult | null;
   /** Strain units from extension cards used this round. */
   strainThisRound: number;
+  /** Free redraws left this round (Substrate). */
+  freeRedraws: number;
   /**
    * Set by a Sound Shift: the active words may no longer be in the dictionary.
    * SUBMIT requires head and tail words to be valid while this is set.
@@ -436,6 +523,8 @@ export type Action =
   | { type: 'SUBMIT' }
   /** Give up the round (no valid extension): scores 0, fails the threshold. */
   | { type: 'FORFEIT' }
+  /** A free redraw granted by the loadout (Substrate L3+), before any step. */
+  | { type: 'REDRAW' }
   /** Use an instant card (Sound Shift, Loanword, Utility, Echo). */
   | { type: 'USE_CARD'; instanceId: string; target?: CardTarget }
   | { type: 'CONTINUE' }
@@ -489,6 +578,9 @@ export interface EngineContent {
   bossModifiers: BossModifierSpec[];
   inRunModifiers: InRunModifierSpec[];
   secretWords: string[];
+  preRun: { categories: PreRunCategorySpec[]; risks: RiskSpec[]; challenges: ChallengeSpec[] };
+  achievements: AchievementSpec[];
+  tileModifiers: TileModifierSpec[];
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string; word?: string };

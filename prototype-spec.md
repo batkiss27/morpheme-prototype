@@ -274,7 +274,7 @@ clear.** No animation beyond a CSS transition on the boss transition screen.
 
 | Phase | Screen | Must show |
 |---|---|---|
-| (pre-run) | `LexiconScreen` | Seed input, loadout picker (tile modifiers by letter level, pre-run categories), start button. **Milestone 7** — until then a "Quick Start" button with a default loadout. |
+| (pre-run) | `LexiconScreen` | Lexicon points, letter levels (buy; pick one tile modifier per letter gated by level), pre-run category levels (unlock; activate ≤ unlocked), Steep Curve risk, challenge toggles after a win, budget and validation errors, seed input, "Start run with loadout" / "Quick Start", load an exported run, reset progression. |
 | ROUND_START/EXTEND | `RoundScreen` | Round number, threshold, current chain (tiles as boxes, morpheme boundaries as gaps, active spans underlined), hand, front/back drop zones, step list with undo, live preview score, card quadrant panel, in-run modifier button, submit. |
 | SCORED | `ScoreScreen` | Breakdown: word points × morpheme mult × bonuses × in-run mult = score vs threshold; pass/fail; currency earned by source. Continue. |
 | SHOP | `ShopScreen` | Card slots with type/rarity/price, tile action slot, reroll (price), sell held cards, conditional in-run slot when criteria met, currency, leave. |
@@ -466,6 +466,8 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
 | 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
 | 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
+| 2026-09-16 | Meta-progression: `engine/meta.ts` (pure) owns levels, budget, loadout validation, run facts and achievements; the store persists `MetaState` in `localStorage` (`morpheme.meta.v1`) and awards a run once when it reaches GAME_OVER / WIN. `engine/loadout.ts` maps the loadout to lives, hand size, free redraws (`REDRAW` action), threshold scale, shop price multiplier, boss rules and Vowel Thief tile values. | §4, §5, §6 |
+| 2026-09-16 | Steep Curve is applied as a threshold scale in `scoring.threshold(round, balance, scale)`; screens read `thresholdFor(state, content, round)`. Pre-run category levels are cumulative; the loadout budget starts at 4 and caps at 20; at most 8 modified letters. | §7 |
 | 2026-09-16 | DebugPanel (`?debug=1`): cheats (currency, lives, card, modifier, skip to round, force boss modifier) and live balance edits are `DEBUG` actions, logged like any other; `RunState.balanceOverride` holds the live balance and `reduce` swaps it into content. The store keeps the run's starting balance for exports. | §6, §9 |
 | 2026-09-16 | In-run modifiers: content rows carry `hookId`; `engine/modifiers/registry.ts` implements hook points `morphemeValue`, `multiplierBase`, `extensionBonus`, `strain`, `roundCurrency`, `onNaturalRound`, `bossRules`, `reward`, folded in acquisition order (`state.inRun`). `scoringInputs(state, content)` is the one place the reducer and the screens get modifier-aware scoring inputs. | §7 |
 | 2026-09-16 | Scoring with modifiers: word points are summed per morpheme with a per-morpheme multiplier (Suffix/Prefix Bias, Inflection, Vowel Harmony); the multiplier base is `balance + Agglutination + Momentum + Chain Lightning`; Mirror multiplies the front+back bonus. The workbook's flat "in-run multiplier" stays a scenario assumption. | §7 |
@@ -488,6 +490,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | Date | Version | Change |
 |---|---|---|
 | 2026-09-16 | 0.1 | Initial spec drafted from DESIGN.md rev 3 and Morpheme_Master.xlsx. |
+| 2026-09-16 | 0.9 | M7 landed. §6: LexiconScreen. Decision log: meta, loadout, Steep Curve. |
 | 2026-09-16 | 0.8 | M6 landed. §9: export v2 with balance and the history replay. §6: DebugPanel, load-run on StartScreen, per-round table on EndScreen, boss-feed readout on RoundScreen. |
 | 2026-09-16 | 0.7 | M5 landed. §5: `BUY_IN_RUN`, reward picks, boss jump. §7: hook points and economy rules. Decision log: modifiers, economy, streak rule, rewards, secret words. |
 | 2026-09-16 | 0.6 | M4 landed. §5: boss actions and placement/feed semantics. §6: BossIntroScreen and BossScreen exist; the 1 s transition; BOSS_REWARD still a stub until M5. Decision log: board, placement, feed, ticking. |

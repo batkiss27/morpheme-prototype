@@ -1,6 +1,6 @@
-import { boss as B, tiles as T, scoring } from '../../engine';
+import { boss as B, tiles as T, scoring, thresholdFor } from '../../engine';
 import type { RunState } from '../../engine';
-import { useStore } from '../store';
+import { content, useStore } from '../store';
 
 /** Small "next boss feed" readout for regular rounds (P6-04). */
 export function BossPreview({ run }: { run: RunState }) {
@@ -23,7 +23,7 @@ export function BossPreview({ run }: { run: RunState }) {
         ))}
       </p>
       <p className="muted">
-        Feed: {letters.length} tiles · starter <code>{starter}</code> · threshold {scoring.threshold(nextBossRound, balance).toLocaleString()}
+        Feed: {letters.length} tiles · starter <code>{starter}</code> · threshold {thresholdFor(run, content(), nextBossRound).toLocaleString()}
       </p>
     </div>
   );

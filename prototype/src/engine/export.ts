@@ -8,6 +8,7 @@
  */
 
 import * as cards from './cards';
+import * as chainMod from './chain';
 import { createRun, reduce } from './run';
 import type { Action, Balance, EngineContent, PreRunLoadout, RunState } from './types';
 
@@ -62,7 +63,17 @@ export interface RoundSummary {
   passed: boolean;
   outcome: string;
   currencyEarned: number;
+  /** Card names used this round (for display). */
   cardsUsed: string[];
+  /** Card ids used this round (for predicates). */
+  cardIds: string[];
+  /** Morphemes added this round (regular rounds). */
+  added: number;
+  frontBack: boolean;
+  /** The chain was one dictionary word when scored. */
+  natural: boolean;
+  /** A secret word was completed this round. */
+  secretWord?: string;
 }
 
 /**
@@ -90,10 +101,12 @@ export function replayWithHistory(exp: RunExport, content: EngineContent): { sta
     const scored = (s.phase === 'SCORED' || s.phase === 'BOSS_END') && before.phase !== s.phase && s.lastResult;
     if (scored && s.lastResult) {
       const r = s.lastResult;
-      history.push({
+      const shape = s.chain && r.kind === 'regular' ? chainMod.morphemesAddedIn(s.chain, r.round) : { front: 0, back: 0, total: 0 };
+      const secret = s.achievements.length > before.achievements.length ? s.achievements[s.achievements.length - 1]?.replace(/^secret:/, '') : undefined;
+      const entry: RoundSummary = {
         round: r.round,
         kind: r.kind,
-        chain: s.chain ? s.chain.tiles.map((t) => t.playedAs ?? t.letter).join('').toLowerCase() : '',
+        chain: s.chain ? chainMod.text(s.chain) : '',
         morphemes: r.morphemes,
         score: r.score,
         threshold: r.threshold,
@@ -102,7 +115,13 @@ export function replayWithHistory(exp: RunExport, content: EngineContent): { sta
         outcome: r.outcome,
         currencyEarned: r.currencyEarned,
         cardsUsed: cardsUsed.map((id) => cards.cardSpec(c, id)?.name ?? id),
-      });
+        cardIds: cardsUsed,
+        added: shape.total,
+        frontBack: shape.front >= 1 && shape.back >= 1,
+        natural: s.chain?.natural ?? false,
+      };
+      if (secret) entry.secretWord = secret;
+      history.push(entry);
       cardsUsed = [];
     }
   }

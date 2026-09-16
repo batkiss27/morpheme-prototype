@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RunState } from '../engine';
 import { playCue } from './audio';
-import { BossIntroScreen, BossScreen, EndScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen, StartScreen } from './screens';
+import { BossIntroScreen, BossScreen, EndScreen, LexiconScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen } from './screens';
 import { DebugPanel } from './components';
 import { debugEnabled, endRun, loadDictionary, useStore } from './store';
 
@@ -33,7 +33,7 @@ export function App() {
   if (!run) {
     return (
       <div>
-        <StartScreen />
+        <LexiconScreen />
         {debug && <DebugPanel />}
       </div>
     );

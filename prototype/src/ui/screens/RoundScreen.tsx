@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cards as cardFns, chain as C, lastError, scoring, scoringInputs, tiles as T } from '../../engine';
+import { cards as cardFns, chain as C, lastError, scoring, scoringInputs, thresholdFor, tiles as T } from '../../engine';
 import type { CardInstance, CardSpec, Dictionary, Letter, RunState, Side, Tile as TileModel } from '../../engine';
 import { BossPreview, CardPanel, ChainView, RunHeader, Tile } from '../components';
 import { content, dispatch, useStore } from '../store';
@@ -111,7 +111,7 @@ export function RoundScreen({ run }: { run: RunState }) {
   const lastAction = run.log[run.log.length - 1]?.action;
   const stepError = error && (lastAction?.type === 'PLAY_STEP' || lastAction?.type === 'USE_CARD' || lastAction?.type === 'SUBMIT') ? error : undefined;
 
-  const threshold = scoring.threshold(run.round, balance);
+  const threshold = thresholdFor(run, content());
   const inputs = run.chain && run.steps.length > 0 ? scoringInputs(run, engineContent) : null;
   const preview =
     inputs && run.chain
@@ -151,7 +151,7 @@ export function RoundScreen({ run }: { run: RunState }) {
                 {run.roundEffects.bank && <span className="badge">Bank ×2 currency</span>}
                 {run.roundEffects.insurance && <span className="badge">Insurance</span>}
                 {run.roundEffects.lexicographer && (
-                  <span className="badge">Lexicographer: next threshold {scoring.threshold(run.round + 1, balance).toLocaleString()}</span>
+                  <span className="badge">Lexicographer: next threshold {thresholdFor(run, content(), run.round + 1).toLocaleString()}</span>
                 )}
               </p>
             )}
@@ -198,7 +198,14 @@ export function RoundScreen({ run }: { run: RunState }) {
           )}
 
           <div className="panel">
-            <h2>Hand</h2>
+            <h2>
+              Hand{' '}
+              {run.freeRedraws > 0 && (
+                <button type="button" className="btn--small" disabled={run.steps.length > 0} onClick={() => dispatch({ type: 'REDRAW' })} title="Substrate: one free redraw per round, before any step">
+                  Free redraw ({run.freeRedraws})
+                </button>
+              )}
+            </h2>
             <div className="hand">
               {run.hand.map((t) => (
                 <Tile key={t.id} tile={t} selected={selectedIds.includes(t.id)} onClick={() => toggle(t.id)} />

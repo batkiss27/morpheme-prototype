@@ -1,5 +1,5 @@
 /** Helpers to drive the run reducer in tests. */
-import { bossModifiers, cards, defaultBalance, inRunModifiers, letters, secretWords } from '../src/content';
+import { achievements, bossModifiers, cards, challenges, defaultBalance, inRunModifiers, letters, preRunCategories, risks, secretWords, tileModifiers } from '../src/content';
 import { createRun, defaultLoadout, reduce, tiles as T } from '../src/engine';
 import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState } from '../src/engine';
 
@@ -7,7 +7,7 @@ import type { Balance, Dictionary, EngineContent, Letter, MorphemeSide, RunState
 export const anyDict: Dictionary = { has: (w) => w.length >= 2, size: Number.POSITIVE_INFINITY };
 
 export function makeContent(dictionary: Dictionary = anyDict, balance: Balance = defaultBalance): EngineContent {
-  return { balance, dictionary, letters, cards, bossModifiers, inRunModifiers, secretWords };
+  return { balance, dictionary, letters, cards, bossModifiers, inRunModifiers, secretWords, preRun: { categories: preRunCategories, risks, challenges }, achievements, tileModifiers };
 }
 
 export function newRun(content: EngineContent, seed = 1, loadout = defaultLoadout): RunState {

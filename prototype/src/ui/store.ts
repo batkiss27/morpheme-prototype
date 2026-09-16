@@ -4,10 +4,10 @@
  */
 
 import { useSyncExternalStore } from 'react';
-import { createRun, dictionary as dictFns, exportRunJson, lastError, parseRunExport, reduce, replay, defaultLoadout, rng as rngFns } from '../engine';
+import { createRun, dictionary as dictFns, exportRunJson, lastError, meta as metaFns, parseRunExport, reduce, replay, defaultLoadout, rng as rngFns } from '../engine';
 import { playCue } from './audio';
-import type { Action, Balance, CardSpec, Dictionary, EngineContent, PreRunLoadout, RunState } from '../engine';
-import { bossModifiers, cards, defaultBalance, inRunModifiers, letters, secretWords } from '../content';
+import type { Action, Balance, CardSpec, Dictionary, EngineContent, MetaState, PreRunLoadout, RunAwards, RunState } from '../engine';
+import { achievements, bossModifiers, cards, challenges, defaultBalance, inRunModifiers, letters, preRunCategories, risks, secretWords, tileModifiers } from '../content';
 import { validateCards } from '../engine/cards';
 import { validateBossModifiers } from '../engine/boss';
 import { validateInRunModifiers } from '../engine/modifiers';
@@ -28,6 +28,33 @@ export interface StoreState {
   run: RunState | null;
   /** The balance the current run was created with (exports carry it; live edits are logged as actions). */
   runBalance: Balance | null;
+  /** Meta-progression, persisted in localStorage (P7-01). */
+  meta: MetaState;
+  /** Awards from the run that just ended, for the EndScreen. */
+  awards: RunAwards | null;
+}
+
+const META_KEY = 'morpheme.meta.v1';
+
+function readMeta(): MetaState {
+  const fresh = metaFns.createMeta(defaultBalance);
+  try {
+    const raw = window.localStorage.getItem(META_KEY);
+    if (!raw) return fresh;
+    const parsed = JSON.parse(raw) as MetaState;
+    if (parsed.version !== metaFns.META_VERSION) return fresh;
+    return { ...fresh, ...parsed };
+  } catch {
+    return fresh;
+  }
+}
+
+function writeMeta(meta: MetaState): void {
+  try {
+    window.localStorage.setItem(META_KEY, JSON.stringify(meta));
+  } catch {
+    /* private mode / SSR: progression simply does not persist */
+  }
 }
 
 let state: StoreState = {
@@ -35,6 +62,8 @@ let state: StoreState = {
   balance: defaultBalance,
   run: null,
   runBalance: null,
+  meta: readMeta(),
+  awards: null,
 };
 
 const listeners = new Set<() => void>();
@@ -93,7 +122,7 @@ async function fetchText(url: string): Promise<string> {
 
 export function content(): EngineContent {
   if (state.dictionary.state !== 'ready') throw new Error('dictionary not loaded');
-  return { balance: state.balance, dictionary: state.dictionary.dictionary, letters, cards, bossModifiers, inRunModifiers, secretWords };
+  return { balance: state.balance, dictionary: state.dictionary.dictionary, letters, cards, bossModifiers, inRunModifiers, secretWords, preRun: { categories: preRunCategories, risks, challenges }, achievements, tileModifiers };
 }
 
 /**
@@ -111,7 +140,7 @@ export function randomSeed(): number {
 }
 
 export function startRun(seed: number, loadout: PreRunLoadout = defaultLoadout): void {
-  setState({ run: autoAdvance(createRun(seed, loadout, content())), runBalance: state.balance });
+  setState({ run: autoAdvance(createRun(seed, loadout, content())), runBalance: state.balance, awards: null });
 }
 
 export function dispatch(action: Action): void {
@@ -120,7 +149,35 @@ export function dispatch(action: Action): void {
   const after = reduce(before, action, content());
   const cue = cueFor(before, action);
   if (cue && !lastError(after)) playCue(cue.cueId, cue.rarity);
-  setState({ run: autoAdvance(after) });
+  const run = autoAdvance(after);
+  setState({ run });
+  if ((run.phase === 'GAME_OVER' || run.phase === 'WIN') && before.phase !== run.phase) awardRun(run);
+}
+
+/** Apply a finished run to the meta state exactly once (P7-02). */
+function awardRun(run: RunState): void {
+  const c = { ...content(), balance: state.runBalance ?? state.balance };
+  const { meta, awards } = metaFns.applyRunEnd(state.meta, run, c);
+  writeMeta(meta);
+  setState({ meta, awards });
+}
+
+// ---------------------------------------------------------------------------
+// Meta-progression
+// ---------------------------------------------------------------------------
+
+export function setMeta(meta: MetaState): void {
+  writeMeta(meta);
+  setState({ meta });
+}
+
+export function resetMeta(): void {
+  setMeta(metaFns.createMeta(state.balance));
+}
+
+/** Remember the loadout being built on the Lexicon screen. */
+export function setLoadout(loadout: PreRunLoadout): void {
+  setMeta({ ...state.meta, loadout });
 }
 
 /** The card whose cue should play if this action succeeds (bought or used). */
@@ -141,7 +198,7 @@ function cueFor(run: RunState, action: Action): CardSpec | undefined {
 
 /** Back to the start screen. */
 export function endRun(): void {
-  setState({ run: null, runBalance: null });
+  setState({ run: null, runBalance: null, awards: null });
 }
 
 /** ROUND_START has no screen: the UI drives the START_ROUND arrow itself (spec §5). */

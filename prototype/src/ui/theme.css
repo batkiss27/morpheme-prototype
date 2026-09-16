@@ -287,3 +287,7 @@ textarea { font: inherit; font-size: 12px; color: var(--text); background: var(-
 .rounds td:nth-child(n+3) { text-align: right; }
 .rounds td:last-child { text-align: left; font-size: 12px; }
 .rounds__fail td { color: var(--danger); }
+
+/* --- Lexicon (M7) ----------------------------------------------------------- */
+.letters td { padding: 2px 8px; }
+.letters td:last-child { text-align: left; }

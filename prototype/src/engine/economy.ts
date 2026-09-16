@@ -39,14 +39,20 @@ export interface RegularRoundEconomyInput {
 export function regularRoundCurrency(state: RunState, content: EngineContent, input: RegularRoundEconomyInput): CurrencySource[] {
   const { balance } = content;
   const e = balance.economy;
+  const t = balance.preRun.treasury;
+  const treasury = state.preRun.categories.treasury ?? 0;
   const chain = state.chain;
   const sources: CurrencySource[] = [{ source: 'Round clear', amount: e.roundClear }];
+  if (treasury >= 1) sources.push({ source: 'Treasury', amount: t.roundClearBonus });
   const margin = marginBonus(input.breakdown.score, input.breakdown.threshold, balance);
   if (margin > 0) sources.push({ source: 'Margin bonus', amount: margin });
-  if (input.natural && input.streakAfter > 0) sources.push({ source: 'Natural streak', amount: Math.min(e.naturalStreakCap, input.streakAfter) * e.naturalStreakPer });
+  if (input.natural && input.streakAfter > 0) {
+    const streak = Math.min(e.naturalStreakCap, input.streakAfter) * e.naturalStreakPer;
+    sources.push({ source: treasury >= 2 ? 'Natural streak (Treasury ×2)' : 'Natural streak', amount: streak * (treasury >= 2 ? t.streakMult : 1) });
+  }
   if (chain?.natural) {
     const d = naturalDividend(C.morphemeCount(chain), balance);
-    if (d > 0) sources.push({ source: 'Natural word dividend', amount: d });
+    if (d > 0) sources.push({ source: treasury >= 4 ? 'Natural word dividend (Treasury ×2)' : 'Natural word dividend', amount: d * (treasury >= 4 ? t.dividendMult : 1) });
   }
   const extra = input.shape.front + input.shape.back - 1;
   if (extra > 0) sources.push({ source: 'Extension bonus payout', amount: extra * e.extensionBonusPayout });
