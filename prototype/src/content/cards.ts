@@ -223,4 +223,34 @@ export const cards: CardSpec[] = [
   },
 ];
 
+// --- the rest of the Per Round Cards tab (P8-02), in rarity order ---
+cards.push(
+  // Basic
+  { id: 'lenition', name: 'Lenition', type: 'sound_shift', rarity: 'basic', duration: 'round', price: 3, effectId: 'lenition', params: {}, cueId: 'softening_thud', text: 'Change a chosen consonant to one with a lower base value.' },
+  { id: 'etymology', name: 'Etymology', type: 'utility', rarity: 'basic', duration: 'round', price: 3, effectId: 'etymology', params: {}, cueId: 'dice_roll', text: 'Reroll the shop for free.' },
+  // Uncommon
+  { id: 'rhyme', name: 'Rhyme', type: 'extension', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'rhyme', params: { strain: 1, minShared: 2 }, cueId: 'rhyming_chime', text: 'Append a dictionary word that rhymes with the tail morpheme (shares its last 2 letters — an approximation). Causes strain.' },
+  { id: 'anagram', name: 'Anagram', type: 'extension', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'anagram', params: {}, cueId: 'shuffling_tiles', text: "Rearrange the tail morpheme's letters into a new dictionary word, then extend it naturally. Causes strain." },
+  { id: 'backformation', name: 'Backformation', type: 'extension', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'backformation', params: {}, cueId: 'rewind_two_clicks', text: 'Remove the tail morpheme (its tiles return to your hand), then add two. Causes strain.' },
+  { id: 'fortition', name: 'Fortition', type: 'sound_shift', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'fortition', params: {}, cueId: 'hardening_clank', text: 'Change a chosen consonant to one with a higher base value.' },
+  { id: 'weight_swap', name: 'Weight Swap', type: 'sound_shift', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'weight_swap', params: {}, cueId: 'scale_tipping', text: 'Swap all letters of a chosen base value for random letters of the same base value.' },
+  { id: 'borrowing', name: 'Borrowing', type: 'loanword', rarity: 'uncommon', duration: 'run', price: 5, effectId: 'borrowing', params: { count: 3, minValue: 4 }, cueId: 'coins_dropping', text: 'Add 3 random tiles of base value ≥ 4 to the pool.' },
+  { id: 'purism', name: 'Purism', type: 'loanword', rarity: 'uncommon', duration: 'run', price: 5, effectId: 'purism', params: {}, cueId: 'eraser_squeak', text: 'Remove all tiles of a chosen letter from the pool.' },
+  { id: 'tile_smith', name: 'Tile Smith', type: 'loanword', rarity: 'uncommon', duration: 'run', price: 5, effectId: 'tile_smith', params: { maxLevel: 2 }, cueId: 'hammer_on_anvil', text: 'Apply a Level 1 or 2 tile modifier to a tile in hand for the rest of the run.' },
+  { id: 'milestone', name: 'Milestone', type: 'utility', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'milestone', params: {}, cueId: 'flag_planting', text: 'If you extend by 2+ morphemes this round, the next shop offers an in-run modifier slot.' },
+  { id: 'tempo_card', name: 'Tempo', type: 'utility', rarity: 'uncommon', duration: 'round', price: 5, effectId: 'tempo_card', params: { bonus: 0.2 }, cueId: 'metronome', text: 'Next Boss Round: timer +20%.' },
+  // Exotic
+  { id: 'infix', name: 'Infix', type: 'extension', rarity: 'exotic', duration: 'round', price: 8, effectId: 'infix', params: { strain: 1 }, cueId: 'zipper_opening', text: 'Insert a whole dictionary word between two existing morphemes. Causes strain.' },
+  { id: 'gemination', name: 'Gemination', type: 'sound_shift', rarity: 'exotic', duration: 'round', price: 8, effectId: 'gemination', params: {}, cueId: 'stutter_drum', text: 'Double a chosen letter in the word (it scores twice).' },
+  { id: 'great_vowel_shift', name: 'Great Vowel Shift', type: 'sound_shift', rarity: 'exotic', duration: 'round', price: 8, effectId: 'great_vowel_shift', params: {}, cueId: 'rising_arpeggio', text: 'Rotate every vowel in the word (A→E→I→O→U→A).' },
+  { id: 'dialect', name: 'Dialect', type: 'loanword', rarity: 'exotic', duration: 'run', price: 8, effectId: 'dialect', params: {}, cueId: 'two_voices', text: 'Duplicate one tile in hand into the pool, with its current modifiers.' },
+  { id: 'substrate_card', name: 'Substrate', type: 'loanword', rarity: 'exotic', duration: 'run', price: 8, effectId: 'substrate_card', params: { extra: 1 }, cueId: 'bass_note', text: 'Hand size +1 for the rest of the run.' },
+  { id: 'wildcard_round', name: 'Wildcard Round', type: 'utility', rarity: 'exotic', duration: 'round', price: 8, effectId: 'wildcard_round', params: {}, cueId: 'fanfare', text: 'Extension bonuses this round are doubled.' },
+  // Relic
+  { id: 'before_and_after_deluxe', name: 'Before & After Deluxe', type: 'extension', rarity: 'relic', duration: 'run', price: 12, effectId: 'before_and_after', params: { strain: 0 }, cueId: 'wheel_jingle', text: 'Once per round, a Before & After with no strain. Kept for the rest of the run.', reusable: true },
+  { id: 'ablaut', name: 'Ablaut', type: 'sound_shift', rarity: 'relic', duration: 'run', price: 12, effectId: 'ablaut', params: {}, cueId: 'organ_note', text: 'Once per round, change one vowel to any vowel. Kept for the rest of the run.', reusable: true },
+  { id: 'restock', name: 'Restock', type: 'loanword', rarity: 'relic', duration: 'run', price: 12, effectId: 'restock', params: {}, cueId: 'cash_register', text: 'Return all committed word tiles to the pool as copies (the word keeps its tiles).' },
+  { id: 'second_wind', name: 'Second Wind', type: 'utility', rarity: 'relic', duration: 'round', price: 12, effectId: 'second_wind', params: {}, cueId: 'deep_breath', text: 'Regain a lost life.' },
+);
+
 export const cardById: ReadonlyMap<string, CardSpec> = new Map(cards.map((c) => [c.id, c]));

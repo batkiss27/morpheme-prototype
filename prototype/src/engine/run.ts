@@ -85,7 +85,14 @@ export function createRun(seed: number, loadout: PreRunLoadout, content: EngineC
     chainDirty: false,
     roundEffects: {},
     freeRedraws: 0,
+    cardsUsedThisRound: [],
   };
+}
+
+/** Hand size: balance + Substrate loadout + Bonus Draw / Substrate card. */
+function handSizeFor(state: RunState, content: EngineContent): number {
+  const balance = state.balanceOverride ?? content.balance;
+  return mods.handSize(state, content, loadoutFns.handSize(state.preRun, balance)) + (state.modifierState.hand_bonus ?? 0);
 }
 
 /** The round's threshold for this run (Steep Curve applied). */
@@ -114,7 +121,7 @@ export function scoringInputs(state: RunState, content: EngineContent) {
   const kind = scoring.extensionBonusKind(shape);
   const points = chain ? scoring.wordPointsBy(chain, state.round, mods.morphemeMultiplier(state, content)) : { total: 0, perMorpheme: [] };
   const base = mods.multiplierBase(state, content);
-  const extensionBonusMult = mods.extensionBonus(state, content, kind, 1);
+  const extensionBonusMult = mods.extensionBonus(state, content, kind, 1) * (state.roundEffects.wildcard && kind !== 'none' ? 2 : 1);
   const flatBonus = mods.flatBonus(state, content);
   const inRunMult = inRunMultiplier(state) * mods.scoreMultiplier(state, content);
   const notes: string[] = [];
@@ -169,7 +176,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         round = Math.min(balance.rounds.total, Math.ceil(round / balance.rounds.bossEvery) * balance.rounds.bossEvery);
         flags = { ...flags, bossJumpPending: false };
       }
-      const base: RunState = { ...state, round, flags, steps: [], undo: [], strainThisRound: 0, roundEffects: {}, shop: null, freeRedraws: loadoutFns.freeRedraws(state.preRun, balance) };
+      const base: RunState = { ...state, round, flags, steps: [], undo: [], strainThisRound: 0, roundEffects: {}, shop: null, freeRedraws: loadoutFns.freeRedraws(state.preRun, balance), cardsUsedThisRound: [] };
       if (scoring.isBossRound(round, balance)) {
         const [mod, r1] = boss.rollModifier(content.bossModifiers, state.rng);
         const bossState: BossState = {
@@ -194,7 +201,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         };
         return ok({ ...base, phase: 'BOSS_INTRO', boss: bossState, rng: r1 });
       }
-      const d = tiles.draw(state.pool, mods.handSize(state, content, loadoutFns.handSize(state.preRun, balance)), state.rng);
+      const d = tiles.draw(state.pool, handSizeFor(state, content), state.rng);
       return ok({ ...base, phase: 'EXTEND', pool: d.pool, hand: d.drawn, rng: d.rng });
     }
 
@@ -307,7 +314,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.freeRedraws <= 0) return fail('no free redraw left this round');
       if (state.steps.length > 0) return fail('a redraw must happen before playing a step');
       const pool = tiles.returnTiles(state.pool, state.hand);
-      const d = tiles.draw(pool, mods.handSize(state, content, loadoutFns.handSize(state.preRun, balance)), state.rng);
+      const d = tiles.draw(pool, handSizeFor(state, content), state.rng);
       return ok({ ...state, pool: d.pool, hand: d.drawn, rng: d.rng, freeRedraws: state.freeRedraws - 1 });
     }
 
@@ -433,6 +440,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         [dead, r0] = boss.rollDeadLetter(chainTiles.map((t) => tiles.tileLetter(t)), r0);
         rules = { ...rules, deadLetter: dead };
       }
+      if (state.flags.tempoBonus) rules = { ...rules, timerMs: Math.round(rules.timerMs * (1 + state.flags.tempoBonus)) };
       const starter = state.chain ? boss.starterTiles(state.chain, b.bossNumber, { ...balance, boss: { ...balance.boss, gridSize: rules.gridSize } }, rules) : [];
       const board = boss.placeStarter(boss.createBoard(rules.gridSize), starter);
       let [queue, r1] = boss.buildQueue(chainTiles, r0, 1, rules);
@@ -442,6 +450,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         ...state,
         phase: 'BOSS_PLAY',
         rng: r1,
+        flags: { ...state.flags, tempoBonus: 0 },
         boss: {
           ...b,
           rules,
@@ -534,6 +543,7 @@ function snapshot(state: RunState): StepSnapshot {
     strainThisRound: state.strainThisRound,
     chainDirty: state.chainDirty,
     roundEffects: state.roundEffects,
+    cardsUsedThisRound: state.cardsUsedThisRound,
   };
 }
 
@@ -578,14 +588,17 @@ function playCardStep(state: RunState, action: PlayStepAction, instanceId: strin
   const effect = cards.stepEffects[spec.effectId as keyof typeof cards.stepEffects];
   if (!effect) return fail(`${spec.name} is not an extension card`);
   if (!state.chain) return fail('play a first word before using an extension card');
-  if (action.side !== 'back') return fail('extension cards extend the back of the word (D5)');
+  const isInfix = spec.effectId === 'infix';
+  if (isInfix ? action.side !== 'insert' : action.side !== 'back') return fail(isInfix ? 'Infix inserts inside the word (side "insert")' : 'extension cards extend the back of the word (D5)');
+  if (spec.reusable && state.cardsUsedThisRound.includes(held.instanceId)) return fail(`${spec.name} was already used this round`);
 
   const committed = tiles.commit(state.hand, action.tileIds, action.playedAs);
   if ('error' in committed) return fail(committed.error);
-  const r = effect(state.chain, committed.committed, content.dictionary, state.round, spec);
+  const specForStep = isInfix ? { ...spec, params: { ...spec.params, insertAfter: action.insertAfter ?? -1 } } : spec;
+  const r = effect(state.chain, committed.committed, content.dictionary, state.round, specForStep);
   if (!r.ok) return fail(`${spec.name}: ${r.error}`);
 
-  const record: StepRecord = { side: 'back', tileIds: action.tileIds, word: chainMod.tailText(r.value), viaCard: spec.id };
+  const record: StepRecord = { side: action.side, tileIds: action.tileIds, word: isInfix ? chainMod.lettersOf(committed.committed) : chainMod.tailText(r.value), viaCard: spec.id };
   if (action.playedAs) record.playedAs = action.playedAs;
   const strained = mods.strain(state, content, spec, Number(spec.params.strain ?? 1));
   return ok({
@@ -593,7 +606,8 @@ function playCardStep(state: RunState, action: PlayStepAction, instanceId: strin
     chain: r.value,
     hand: committed.hand,
     steps: [...state.steps, record],
-    cards: state.cards.filter((c) => c !== held),
+    cards: spec.reusable ? state.cards : state.cards.filter((c) => c !== held),
+    cardsUsedThisRound: spec.reusable ? [...state.cardsUsedThisRound, held.instanceId] : state.cardsUsedThisRound,
     strainThisRound: state.strainThisRound + strained.units,
   });
 }
@@ -606,11 +620,13 @@ function useCard(state: RunState, instanceId: string, target: CardTarget, conten
   if (!spec) return fail(`unknown card ${held.cardId}`);
   if (cards.usage(spec) === 'step') return fail(`${spec.name} is used by adding tiles to the back of the word`);
   if (!cards.usableIn(spec, state.phase)) return fail(`${spec.name} cannot be used in phase ${state.phase}`);
+  if (spec.reusable && state.cardsUsedThisRound.includes(held.instanceId)) return fail(`${spec.name} was already used this round`);
   const effect = cards.instantEffects[spec.effectId as keyof typeof cards.instantEffects];
   const r = effect({ state, card: spec, target, content });
   if (!r.ok) return fail(`${spec.name}: ${r.error}`);
-  const remaining = (r.patch.cards ?? state.cards).filter((c) => c !== held);
-  return ok({ ...state, ...r.patch, cards: remaining });
+  const remaining = spec.reusable ? (r.patch.cards ?? state.cards) : (r.patch.cards ?? state.cards).filter((c) => c !== held);
+  const used = spec.reusable ? [...state.cardsUsedThisRound, held.instanceId] : state.cardsUsedThisRound;
+  return ok({ ...state, ...r.patch, cards: remaining, cardsUsedThisRound: used });
 }
 
 // ---------------------------------------------------------------------------

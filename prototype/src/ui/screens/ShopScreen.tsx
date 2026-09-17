@@ -152,7 +152,16 @@ export function ShopScreen({ run }: { run: RunState }) {
         )}
       </div>
 
-      <CardPanel run={run} hint="Held cards by type. Loanword-type cards can also be used here in a later milestone." />
+      <CardPanel
+        run={run}
+        hint="Cards usable in the shop (Etymology, Borrowing, Substrate, Restock, Second Wind, Tempo) can be clicked here."
+        onCardClick={(inst, spec) => {
+          if (!cardFns.usableIn(spec, run.phase) || cardFns.usage(spec) === 'step') return;
+          if (['etymology', 'borrowing', 'substrate_card', 'restock', 'second_wind', 'tempo_card', 'simplification'].includes(spec.effectId)) {
+            dispatch({ type: 'USE_CARD', instanceId: inst.instanceId });
+          }
+        }}
+      />
     </div>
   );
 }

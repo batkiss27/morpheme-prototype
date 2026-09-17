@@ -14,7 +14,7 @@ import fixtures from './fixtures/cards/extension.json';
 describe('card registry', () => {
   it('every card in content names an implemented effect', () => {
     expect(() => cards.validateCards(cardContent)).not.toThrow();
-    expect(cardContent.length).toBe(17);
+    expect(cardContent.length).toBe(39); // the tab minus Homophone and Preview
   });
 
   it('rejects unknown effects and duplicate ids', () => {

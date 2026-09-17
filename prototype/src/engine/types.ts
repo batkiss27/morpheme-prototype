@@ -108,12 +108,13 @@ export type CardType = 'sound_shift' | 'extension' | 'loanword' | 'utility';
 /** Effect ids implemented in engine/cards/. A card that reuses one is data-only. */
 export type EffectId =
   // extension (used through PLAY_STEP { viaCard })
-  | 'before_and_after' | 'reduplication' | 'hyphen' | 'blend' | 'free_morpheme'
+  | 'before_and_after' | 'reduplication' | 'hyphen' | 'blend' | 'free_morpheme' | 'rhyme' | 'infix'
   // instant (used through USE_CARD)
   | 'echo'
-  | 'vowel_shift' | 'glide' | 'elision' | 'metathesis'
-  | 'loanword' | 'simplification' | 'redraw'
-  | 'amendment' | 'lexicographer' | 'bank' | 'insurance';
+  | 'vowel_shift' | 'glide' | 'elision' | 'metathesis' | 'lenition' | 'fortition' | 'weight_swap' | 'gemination' | 'great_vowel_shift' | 'ablaut'
+  | 'anagram' | 'backformation'
+  | 'loanword' | 'simplification' | 'redraw' | 'borrowing' | 'purism' | 'tile_smith' | 'dialect' | 'substrate_card' | 'restock'
+  | 'amendment' | 'lexicographer' | 'bank' | 'insurance' | 'etymology' | 'milestone' | 'tempo_card' | 'wildcard_round' | 'second_wind';
 
 export interface CardSpec {
   id: CardId;
@@ -128,6 +129,8 @@ export interface CardSpec {
   cueId: string;
   /** Effect text shown on the card. */
   text: string;
+  /** Rest-of-run card usable once per round; never consumed. */
+  reusable?: boolean;
 }
 
 export interface CardInstance {
@@ -143,6 +146,10 @@ export interface CardTarget {
   letter?: Letter;
   /** Another held card (Echo). */
   instanceId?: string;
+  /** A tile modifier to apply (Tile Smith). */
+  modifier?: TileModifierId;
+  /** Letters, e.g. an anagram of the tail morpheme (Anagram). */
+  letters?: string;
 }
 
 /** Card effects that are active for the current round. */
@@ -153,6 +160,10 @@ export interface RoundEffects {
   insurance?: boolean;
   /** Lexicographer: next round's threshold (and boss modifier, M4) revealed. */
   lexicographer?: boolean;
+  /** Milestone: extending by 2+ this round opens the shop's in-run slot. */
+  milestone?: boolean;
+  /** Wildcard Round: extension bonuses doubled. */
+  wildcard?: boolean;
 }
 
 export type InRunModifierId = string;
@@ -463,6 +474,7 @@ export interface StepSnapshot {
   strainThisRound: number;
   chainDirty: boolean;
   roundEffects: RoundEffects;
+  cardsUsedThisRound: string[];
 }
 
 /** Score breakdown for the round just played (spec §6 ScoreScreen). */
@@ -518,7 +530,7 @@ export interface RunState {
   shop: ShopState | null;
   boss: BossState | null;
   log: RunEvent[];
-  flags: { bossJumpPending?: boolean; amendmentUsed?: boolean };
+  flags: { bossJumpPending?: boolean; amendmentUsed?: boolean; tempoBonus?: number };
 
   // --- round-local state (reset at ROUND_START) ---
   /** Steps taken this round, in order. */
@@ -531,6 +543,8 @@ export interface RunState {
   strainThisRound: number;
   /** Free redraws left this round (Substrate). */
   freeRedraws: number;
+  /** Reusable cards (B&A Deluxe, Ablaut) already used this round. */
+  cardsUsedThisRound: string[];
   /**
    * Set by a Sound Shift: the active words may no longer be in the dictionary.
    * SUBMIT requires head and tail words to be valid while this is set.
@@ -554,6 +568,8 @@ export type Action =
       playedAs?: Record<string, Letter>;
       /** Instance id of a held Extension card that makes this step. */
       viaCard?: string;
+      /** Infix: insert after this morpheme index (0-based). */
+      insertAfter?: number;
     }
   | { type: 'UNDO_STEP' }
   | { type: 'SUBMIT' }

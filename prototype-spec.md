@@ -466,6 +466,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
 | 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
 | 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
+| 2026-09-16 | Full card set (P8-02): `CardSpec.reusable` cards are never consumed and may be used once per round (`RunState.cardsUsedThisRound`, snapshotted for undo); `CardTarget` gained `modifier` and `letters`; `PLAY_STEP` gained `insertAfter` for Infix (`chain.insertMorpheme` clips the head span at the insertion and re-points the tail). Rhyme ≈ shared last two letters; Homophone and Preview are not implemented. | §4, §5 |
 | 2026-09-16 | Full in-run and boss modifier sets (P8-03). Hook `morphemeValue(ctx, info, points)` folds over the morpheme's base points; new hooks listed in `modifiers/hooks.ts`. Boss rules resolved at `START_BOSS` include the grid size (Mirror Board) and direction / crossing rules validated with a `PlacementContext`. | §5, §7 |
 | 2026-09-16 | Tuning pass 1 (bot playtests): `bossThresholdFactor` 3; base-multiplier modifiers ÷3–5; `shop.guaranteePool` limits the guaranteed Extension card to ones usable with any hand. `scripts/bot.ts` is the reference bot; it lives outside the engine and may read files. | §7, §9 |
 | 2026-09-16 | Meta-progression: `engine/meta.ts` (pure) owns levels, budget, loadout validation, run facts and achievements; the store persists `MetaState` in `localStorage` (`morpheme.meta.v1`) and awards a run once when it reaches GAME_OVER / WIN. `engine/loadout.ts` maps the loadout to lives, hand size, free redraws (`REDRAW` action), threshold scale, shop price multiplier, boss rules and Vowel Thief tile values. | §4, §5, §6 |
@@ -492,6 +493,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | Date | Version | Change |
 |---|---|---|
 | 2026-09-16 | 0.1 | Initial spec drafted from DESIGN.md rev 3 and Morpheme_Master.xlsx. |
+| 2026-09-16 | 0.10 | M8 in progress: bot playtests (`playtests/`), tuning pass 1, full card and modifier sets. |
 | 2026-09-16 | 0.9 | M7 landed. §6: LexiconScreen. Decision log: meta, loadout, Steep Curve. |
 | 2026-09-16 | 0.8 | M6 landed. §9: export v2 with balance and the history replay. §6: DebugPanel, load-run on StartScreen, per-round table on EndScreen, boss-feed readout on RoundScreen. |
 | 2026-09-16 | 0.7 | M5 landed. §5: `BUY_IN_RUN`, reward picks, boss jump. §7: hook points and economy rules. Decision log: modifiers, economy, streak rule, rewards, secret words. |

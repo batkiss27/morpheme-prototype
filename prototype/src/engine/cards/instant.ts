@@ -133,6 +133,173 @@ export const echo: InstantEffect = ({ state, target }) => {
   return ok({ cards: [...state.cards, copy], cardSeq: state.cardSeq + 1 });
 };
 
+// --- more Sound Shift ---------------------------------------------------------
+
+const CONSONANTS: Letter[] = [...'BCDFGHJKLMNPQRSTVWXYZ'] as Letter[];
+
+function reletterConsonant(direction: 'lower' | 'higher'): InstantEffect {
+  return ({ state, target, content }) => {
+    const r = chainTile(state, target);
+    if ('error' in r) return fail(r.error);
+    const current = tileLetter(r.tile);
+    if (!CONSONANTS.includes(current)) return fail(`${current} is not a consonant`);
+    const value = (l: Letter) => content.letters.find((x) => x.letter === l)?.value ?? 0;
+    const cur = value(current);
+    const pool = CONSONANTS.filter((l) => (direction === 'lower' ? value(l) < cur : value(l) > cur));
+    if (pool.length === 0) return fail(`no consonant has a ${direction} value than ${current}`);
+    const [i, next] = rng.int(state.rng, pool.length);
+    return ok({ chain: C.setTileLetter(state.chain!, r.tile.id, pool[i] as Letter), rng: next, chainDirty: true });
+  };
+}
+export const lenition = reletterConsonant('lower');
+export const fortition = reletterConsonant('higher');
+
+/** Every letter of the chosen tile's base value is re-lettered at random within that value. */
+export const weightSwap: InstantEffect = ({ state, target, content }) => {
+  const r = chainTile(state, target);
+  if ('error' in r) return fail(r.error);
+  const v = r.tile.baseValue;
+  const same = content.letters.filter((l) => l.value === v && l.letter !== '_').map((l) => l.letter);
+  if (same.length < 2) return fail(`no other letter is worth ${v}`);
+  let chain = state.chain!;
+  let s = state.rng;
+  for (const t of chain.tiles) {
+    if (t.baseValue !== v || t.letter === '_') continue;
+    let i: number;
+    [i, s] = rng.int(s, same.length);
+    chain = C.setTileLetter(chain, t.id, same[i] as Letter);
+  }
+  return ok({ chain, rng: s, chainDirty: true });
+};
+
+/** Double a chosen letter: a copy tile right after it (it scores twice). */
+export const gemination: InstantEffect = ({ state, target }) => {
+  const r = chainTile(state, target);
+  if ('error' in r) return fail(r.error);
+  const d = C.duplicateTile(state.chain!, r.tile.id, `${r.tile.id}+gem${state.cardSeq}`);
+  if (!d.ok) return fail(d.error);
+  return ok({ chain: d.value, chainDirty: true });
+};
+
+/** Rotate every vowel A→E→I→O→U→A. */
+export const greatVowelShift: InstantEffect = ({ state }) => {
+  if (!state.chain) return fail('there is no word yet');
+  let chain = state.chain;
+  for (const t of chain.tiles) {
+    const l = tileLetter(t);
+    const k = VOWELS.indexOf(l);
+    if (k !== -1) chain = C.setTileLetter(chain, t.id, VOWELS[(k + 1) % VOWELS.length] as Letter);
+  }
+  return ok({ chain, chainDirty: true });
+};
+
+/** Ablaut (reusable): change a chosen vowel to a chosen vowel. */
+export const ablaut: InstantEffect = ({ state, target }) => {
+  const r = chainTile(state, target);
+  if ('error' in r) return fail(r.error);
+  if (!VOWELS.includes(tileLetter(r.tile))) return fail(`${tileLetter(r.tile)} is not a vowel`);
+  if (!target.letter || !VOWELS.includes(target.letter)) return fail('choose a vowel to change it to');
+  return ok({ chain: C.setTileLetter(state.chain!, r.tile.id, target.letter), chainDirty: true });
+};
+
+// --- more Extension-type instants -----------------------------------------------
+
+/** Rearrange the tail morpheme's letters into a new dictionary word (then extend it naturally). */
+export const anagram: InstantEffect = ({ state, target, content }) => {
+  if (!state.chain) return fail('there is no word yet');
+  if (!target.letters) return fail('type the rearranged letters');
+  const a = C.anagramLastMorpheme(state.chain, target.letters);
+  if (!a.ok) return fail(a.error);
+  const tail = C.tailText(a.value);
+  if (!content.dictionary.has(tail)) return fail(`"${tail}" is not in the dictionary`);
+  return ok({ chain: a.value, strainThisRound: state.strainThisRound + 1 });
+};
+
+/** Remove the tail morpheme (its tiles return to the hand), then add two. */
+export const backformation: InstantEffect = ({ state }) => {
+  if (!state.chain) return fail('there is no word yet');
+  const r = C.removeLastMorpheme(state.chain);
+  if (!r.ok) return fail(r.error);
+  const cleared = r.value.removed.map((t) => {
+    const { playedAs: _p, ...rest } = t;
+    return rest;
+  });
+  return ok({ chain: r.value.chain, hand: [...state.hand, ...cleared], strainThisRound: state.strainThisRound + 1, chainDirty: true });
+};
+
+// --- more Loanword -------------------------------------------------------------
+
+function serialFor(state: RunState): number {
+  return state.pool.length + state.hand.length + (state.chain?.tiles.length ?? 0) + state.destroyed.length + 1;
+}
+
+/** Add N random tiles of base value ≥ minValue. */
+export const borrowing: InstantEffect = ({ state, card, content }) => {
+  const n = Number(card.params.count ?? 3);
+  const minValue = Number(card.params.minValue ?? 4);
+  const pool = content.letters.filter((l) => l.value >= minValue);
+  if (pool.length === 0) return fail('no letters qualify');
+  let s = state.rng;
+  const added: Tile[] = [];
+  for (let k = 0; k < n; k++) {
+    let i: number;
+    [i, s] = rng.int(s, pool.length);
+    const spec = pool[i]!;
+    added.push({ id: `${spec.letter}+${serialFor(state) + k}`, letter: spec.letter, baseValue: spec.value, modifiers: [] });
+  }
+  return ok({ pool: [...state.pool, ...added], rng: s });
+};
+
+/** Remove every pool tile of a chosen letter. */
+export const purism: InstantEffect = ({ state, target }) => {
+  if (!target.letter) return fail('choose a letter to remove');
+  const gone = state.pool.filter((t) => t.letter === target.letter);
+  if (gone.length === 0) return fail(`no ${target.letter} tiles in the pool`);
+  return ok({ pool: state.pool.filter((t) => t.letter !== target.letter), destroyed: [...state.destroyed, ...gone] });
+};
+
+/** Apply a level-1/2 tile modifier to a tile in hand for the rest of the run. */
+export const tileSmith: InstantEffect = ({ state, target, content, card }) => {
+  if (!target.tileId) return fail('choose a tile in your hand');
+  if (!target.modifier) return fail('choose a modifier');
+  const spec = content.tileModifiers.find((m) => m.id === target.modifier);
+  if (!spec || spec.level > Number(card.params.maxLevel ?? 2)) return fail('choose a level 1 or 2 modifier');
+  const i = state.hand.findIndex((t) => t.id === target.tileId);
+  if (i === -1) return fail('that tile is not in your hand');
+  const hand = state.hand.map((t, k) => (k === i ? { ...t, modifiers: [...t.modifiers, target.modifier!] } : t));
+  return ok({ hand });
+};
+
+/** Duplicate a hand tile into the pool, modifiers included. */
+export const dialect: InstantEffect = ({ state, target }) => {
+  const tile = state.hand.find((t) => t.id === target.tileId);
+  if (!tile) return fail('choose a tile in your hand');
+  return ok({ pool: [...state.pool, { ...tile, id: `${tile.letter}+${serialFor(state)}`, modifiers: [...tile.modifiers] }] });
+};
+
+/** Hand size +1 for the rest of the run. */
+export const substrateCard: InstantEffect = ({ state, card }) => ok({ modifierState: { ...state.modifierState, hand_bonus: (state.modifierState.hand_bonus ?? 0) + Number(card.params.extra ?? 1) } });
+
+/** Copies of every committed word tile back into the pool. */
+export const restock: InstantEffect = ({ state }) => {
+  if (!state.chain || state.chain.tiles.length === 0) return fail('there is no word yet');
+  const base = serialFor(state);
+  const copies = state.chain.tiles.map((t, k) => ({ ...t, id: `${t.letter}+${base + k}`, modifiers: [...t.modifiers] }));
+  return ok({ pool: [...state.pool, ...copies] });
+};
+
+// --- more Utility ----------------------------------------------------------------
+
+/** One free shop reroll. */
+export const etymology: InstantEffect = ({ state }) => {
+  if (!state.shop) return fail('Etymology is used in the shop');
+  return ok({ shop: { ...state.shop, freeRerolls: state.shop.freeRerolls + 1 } });
+};
+export const milestone: InstantEffect = ({ state }) => ok({ roundEffects: { ...state.roundEffects, milestone: true } });
+export const tempoCard: InstantEffect = ({ state, card }) => ok({ flags: { ...state.flags, tempoBonus: (state.flags.tempoBonus ?? 0) + Number(card.params.bonus ?? 0.2) } });
+export const wildcardRound: InstantEffect = ({ state }) => ok({ roundEffects: { ...state.roundEffects, wildcard: true } });
+export const secondWind: InstantEffect = ({ state }) => ok({ lives: state.lives + 1 });
+
 export const instantEffects = {
   vowel_shift: vowelShift,
   glide,
@@ -146,6 +313,25 @@ export const instantEffects = {
   lexicographer,
   amendment,
   echo,
+  lenition,
+  fortition,
+  weight_swap: weightSwap,
+  gemination,
+  great_vowel_shift: greatVowelShift,
+  ablaut,
+  anagram,
+  backformation,
+  borrowing,
+  purism,
+  tile_smith: tileSmith,
+  dialect,
+  substrate_card: substrateCard,
+  restock,
+  etymology,
+  milestone,
+  tempo_card: tempoCard,
+  wildcard_round: wildcardRound,
+  second_wind: secondWind,
 } satisfies Partial<Record<CardSpec['effectId'], InstantEffect>>;
 
 export type InstantEffectId = keyof typeof instantEffects;
@@ -168,4 +354,23 @@ export const effectPhases: Record<InstantEffectId, Phase[]> = {
   lexicographer: ['EXTEND'],
   amendment: ['BOSS_INTRO'],
   echo: ['EXTEND', 'SHOP'],
+  lenition: ['EXTEND'],
+  fortition: ['EXTEND'],
+  weight_swap: ['EXTEND'],
+  gemination: ['EXTEND'],
+  great_vowel_shift: ['EXTEND'],
+  ablaut: ['EXTEND'],
+  anagram: ['EXTEND'],
+  backformation: ['EXTEND'],
+  borrowing: ['EXTEND', 'SHOP'],
+  purism: ['EXTEND', 'SHOP'],
+  tile_smith: ['EXTEND'],
+  dialect: ['EXTEND'],
+  substrate_card: ['EXTEND', 'SHOP'],
+  restock: ['EXTEND', 'SHOP'],
+  etymology: ['SHOP'],
+  milestone: ['EXTEND'],
+  tempo_card: ['EXTEND', 'SHOP', 'BOSS_INTRO'],
+  wildcard_round: ['EXTEND'],
+  second_wind: ['EXTEND', 'SHOP'],
 };

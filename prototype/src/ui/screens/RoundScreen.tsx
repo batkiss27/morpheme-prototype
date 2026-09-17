@@ -8,9 +8,14 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') as Letter[];
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
 /** Instant effects that need the player to pick something after arming. */
-const NEEDS_TILE = new Set(['vowel_shift', 'glide', 'elision', 'metathesis']);
-const NEEDS_LETTER = new Set(['loanword']);
+const NEEDS_TILE = new Set(['vowel_shift', 'glide', 'elision', 'metathesis', 'lenition', 'fortition', 'weight_swap', 'gemination', 'ablaut']);
+const NEEDS_LETTER = new Set(['loanword', 'purism']);
 const NEEDS_CARD = new Set(['echo']);
+const NEEDS_HAND_TILE = new Set(['tile_smith', 'dialect']);
+const NEEDS_TEXT = new Set(['anagram']);
+const CONSONANT_TARGET = new Set(['lenition', 'fortition']);
+const VOWEL_TARGET = new Set(['vowel_shift', 'glide', 'ablaut']);
+const VOWEL_LETTERS: Letter[] = ['A', 'E', 'I', 'O', 'U'];
 
 /**
  * EXTEND phase (spec §6): click hand tiles to select them in order, then add
@@ -25,6 +30,10 @@ export function RoundScreen({ run }: { run: RunState }) {
   const [blankLetters, setBlankLetters] = useState<Record<string, Letter>>({});
   const [armed, setArmed] = useState<string | null>(null);
   const [loanLetter, setLoanLetter] = useState<Letter>('E');
+  const [ablautVowel, setAblautVowel] = useState<Letter>('A');
+  const [textTarget, setTextTarget] = useState('');
+  const [smithModifier, setSmithModifier] = useState<string>('plus1');
+  const [insertAfter, setInsertAfter] = useState(0);
 
   const engineContent = content();
   const dict: Dictionary = dictionary.state === 'ready' ? dictionary.dictionary : { has: () => false, size: 0 };
@@ -50,17 +59,23 @@ export function RoundScreen({ run }: { run: RunState }) {
   // --- cards ----------------------------------------------------------------------
   const armedInst = armed ? run.cards.find((c) => c.instanceId === armed) : undefined;
   const armedSpec = armedInst ? cardFns.heldSpec(engineContent, armedInst) : undefined;
-  const armedKind = !armedSpec
-    ? null
-    : cardFns.usage(armedSpec) === 'step'
-      ? 'step'
-      : NEEDS_TILE.has(armedSpec.effectId)
-        ? 'tile'
-        : NEEDS_LETTER.has(armedSpec.effectId)
-          ? 'letter'
-          : NEEDS_CARD.has(armedSpec.effectId)
-            ? 'card'
-            : null;
+  const kindOf = (spec: CardSpec | undefined) =>
+    !spec
+      ? null
+      : cardFns.usage(spec) === 'step'
+        ? 'step'
+        : NEEDS_TILE.has(spec.effectId)
+          ? 'tile'
+          : NEEDS_LETTER.has(spec.effectId)
+            ? 'letter'
+            : NEEDS_CARD.has(spec.effectId)
+              ? 'card'
+              : NEEDS_HAND_TILE.has(spec.effectId)
+                ? 'hand'
+                : NEEDS_TEXT.has(spec.effectId)
+                  ? 'text'
+                  : null;
+  const armedKind = kindOf(armedSpec);
 
   const onCardClick = (inst: CardInstance, spec: CardSpec) => {
     if (armed === inst.instanceId) return setArmed(null);
@@ -69,20 +84,27 @@ export function RoundScreen({ run }: { run: RunState }) {
       return setArmed(null);
     }
     if (!cardFns.usableIn(spec, run.phase)) return;
-    const needsChoice = cardFns.usage(spec) === 'step' || NEEDS_TILE.has(spec.effectId) || NEEDS_LETTER.has(spec.effectId) || NEEDS_CARD.has(spec.effectId);
-    if (needsChoice) setArmed(inst.instanceId);
+    if (kindOf(spec) !== null) setArmed(inst.instanceId);
     else dispatch({ type: 'USE_CARD', instanceId: inst.instanceId });
   };
 
   const onChainTileClick = (tile: TileModel) => {
     if (armedKind !== 'tile' || !armedInst) return;
-    dispatch({ type: 'USE_CARD', instanceId: armedInst.instanceId, target: { tileId: tile.id } });
+    const target = armedSpec?.effectId === 'ablaut' ? { tileId: tile.id, letter: ablautVowel } : { tileId: tile.id };
+    dispatch({ type: 'USE_CARD', instanceId: armedInst.instanceId, target });
+    setArmed(null);
+  };
+  const onHandTileForCard = (tile: TileModel) => {
+    if (armedKind !== 'hand' || !armedInst || !armedSpec) return;
+    const target = armedSpec.effectId === 'tile_smith' ? { tileId: tile.id, modifier: smithModifier as TileModel['modifiers'][number] } : { tileId: tile.id };
+    dispatch({ type: 'USE_CARD', instanceId: armedInst.instanceId, target });
     setArmed(null);
   };
   const targetable = (tile: TileModel) => {
     if (!armedSpec) return false;
     const letter = T.tileLetter(tile);
-    if (armedSpec.effectId === 'vowel_shift' || armedSpec.effectId === 'glide') return VOWELS.has(letter);
+    if (VOWEL_TARGET.has(armedSpec.effectId)) return VOWELS.has(letter);
+    if (CONSONANT_TARGET.has(armedSpec.effectId)) return !VOWELS.has(letter) && letter !== '_';
     if (armedSpec.effectId === 'metathesis') return run.chain?.tiles.at(-1)?.id !== tile.id;
     return true;
   };
@@ -96,13 +118,16 @@ export function RoundScreen({ run }: { run: RunState }) {
   const cardPreview = (() => {
     if (!stepCard || !run.chain || previewTiles.length === 0) return null;
     const effect = cardFns.stepEffects[stepCard.effectId as keyof typeof cardFns.stepEffects];
-    const r = effect(run.chain, previewTiles, dict, run.round, stepCard);
+    const specForPreview = stepCard.effectId === 'infix' ? { ...stepCard, params: { ...stepCard.params, insertAfter } } : stepCard;
+    const r = effect(run.chain, previewTiles, dict, run.round, specForPreview);
     return r.ok ? { ok: true as const, word: C.tailText(r.value), error: '' } : { ok: false as const, word: r.word ?? '', error: r.error };
   })();
 
-  const play = (side: Side | 'start') => {
+  const isInfix = stepCard?.effectId === 'infix';
+  const play = (side: Side | 'start' | 'insert') => {
     const action = { type: 'PLAY_STEP' as const, side, tileIds: selectedIds, playedAs };
-    dispatch(stepCard && armedInst && side === 'back' ? { ...action, viaCard: armedInst.instanceId } : action);
+    if (stepCard && armedInst && side === 'insert') dispatch({ ...action, viaCard: armedInst.instanceId, insertAfter });
+    else dispatch(stepCard && armedInst && side === 'back' ? { ...action, viaCard: armedInst.instanceId } : action);
     setSelected([]);
     setArmed(null);
   };
@@ -160,12 +185,73 @@ export function RoundScreen({ run }: { run: RunState }) {
           {armedSpec && armedInst && (
             <div className="armed-note">
               <strong>{armedSpec.name}</strong> armed —{' '}
-              {armedKind === 'step' && 'select tiles and add them to the back.'}
-              {armedKind === 'tile' && 'click a letter in the word.'}
+              {armedKind === 'step' && !isInfix && 'select tiles and add them to the back.'}
+              {armedKind === 'step' && isInfix && run.chain && (
+                <>
+                  select tiles, then insert after{' '}
+                  <select value={insertAfter} onChange={(e) => setInsertAfter(Number(e.target.value))}>
+                    {run.chain.morphemes.slice(0, -1).map((m, i) => (
+                      <option key={m.id} value={i}>
+                        "{C.morphemeText(run.chain!, m)}" (#{i + 1})
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+              {armedKind === 'tile' && armedSpec.effectId === 'ablaut' && (
+                <>
+                  turn a vowel into{' '}
+                  <select value={ablautVowel} onChange={(e) => setAblautVowel(e.target.value as Letter)}>
+                    {VOWEL_LETTERS.map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>{' '}
+                  — click it in the word.
+                </>
+              )}
+              {armedKind === 'tile' && armedSpec.effectId !== 'ablaut' && 'click a letter in the word.'}
               {armedKind === 'card' && 'click another card to copy it.'}
+              {armedKind === 'hand' && (
+                <>
+                  {armedSpec.effectId === 'tile_smith' && (
+                    <>
+                      apply{' '}
+                      <select value={smithModifier} onChange={(e) => setSmithModifier(e.target.value)}>
+                        {engineContent.tileModifiers.filter((m) => m.level <= 2 && m.implemented).map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>{' '}
+                      to
+                    </>
+                  )}{' '}
+                  a tile in your hand — click it.
+                </>
+              )}
+              {armedKind === 'text' && (
+                <>
+                  rearrange "{run.chain ? C.morphemeText(run.chain, C.lastMorpheme(run.chain)) : ''}" into{' '}
+                  <input value={textTarget} onChange={(e) => setTextTarget(e.target.value)} size={10} />{' '}
+                  <button
+                    type="button"
+                    className="btn--small btn--primary"
+                    disabled={!textTarget.trim()}
+                    onClick={() => {
+                      dispatch({ type: 'USE_CARD', instanceId: armedInst.instanceId, target: { letters: textTarget.trim() } });
+                      setArmed(null);
+                      setTextTarget('');
+                    }}
+                  >
+                    Apply
+                  </button>
+                </>
+              )}
               {armedKind === 'letter' && (
                 <>
-                  add a tile of{' '}
+                  {armedSpec.effectId === 'purism' ? 'remove every pool tile of' : 'add a tile of'}{' '}
                   <select value={loanLetter} onChange={(e) => setLoanLetter(e.target.value as Letter)}>
                     {LETTERS.map((l) => (
                       <option key={l} value={l}>
@@ -181,7 +267,7 @@ export function RoundScreen({ run }: { run: RunState }) {
                       setArmed(null);
                     }}
                   >
-                    Add to pool
+                    {armedSpec.effectId === 'purism' ? 'Remove from pool' : 'Add to pool'}
                   </button>
                 </>
               )}{' '}
@@ -208,7 +294,7 @@ export function RoundScreen({ run }: { run: RunState }) {
             </h2>
             <div className="hand">
               {run.hand.map((t) => (
-                <Tile key={t.id} tile={t} selected={selectedIds.includes(t.id)} onClick={() => toggle(t.id)} />
+                <Tile key={t.id} tile={t} selected={selectedIds.includes(t.id)} onClick={() => (armedKind === 'hand' ? onHandTileForCard(t) : toggle(t.id))} />
               ))}
               {run.hand.length === 0 && <span className="muted">Empty.</span>}
             </div>
@@ -253,8 +339,8 @@ export function RoundScreen({ run }: { run: RunState }) {
                 </>
               ) : stepCard ? (
                 <>
-                  <button type="button" className="btn--primary" disabled={!canPlay} onClick={() => play('back')}>
-                    Add to back via {stepCard.name} →
+                  <button type="button" className="btn--primary" disabled={!canPlay} onClick={() => play(isInfix ? 'insert' : 'back')}>
+                    {isInfix ? 'Insert via Infix' : `Add to back via ${stepCard.name} →`}
                   </button>
                   {cardPreview && <CandidateWord word={cardPreview.word} ok={cardPreview.ok} title={cardPreview.ok ? 'valid' : cardPreview.error} />}
                 </>

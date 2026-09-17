@@ -78,5 +78,6 @@ export function shopCriteria(state: RunState, breakdown: ScoreBreakdown, shape: 
   if (breakdown.threshold > 0 && breakdown.score >= 2 * breakdown.threshold) met.push('Double threshold');
   if (shape.front >= 1 && shape.back >= 1) met.push('Front + back');
   if (shape.front + shape.back >= 3) met.push('Triple step');
+  if (state.roundEffects.milestone && shape.front + shape.back >= 2) met.push('Milestone card');
   return met;
 }

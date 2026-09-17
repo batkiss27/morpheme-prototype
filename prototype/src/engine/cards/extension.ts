@@ -64,12 +64,38 @@ export const freeMorpheme: StepEffect = (chain, tiles, _dict, round, card) => {
   return { ok: true, value: C.appendChained(chain, tiles, morpheme(tiles, round, card), chain.tiles.length) };
 };
 
+/**
+ * Rhyme (approximation — no pronunciation data): the new letters must be a
+ * dictionary word sharing its last `minShared` letters with the tail morpheme.
+ */
+export const rhyme: StepEffect = (chain, tiles, dict, round, card) => {
+  const minShared = Number(card.params.minShared ?? 2);
+  const last = C.morphemeText(chain, C.lastMorpheme(chain));
+  const word = C.lettersOf(tiles);
+  if (word.length < minShared) return { ok: false, error: `a rhyme needs at least ${minShared} letters`, word };
+  if (!dict.has(word)) return { ok: false, error: `"${word}" is not in the dictionary`, word };
+  const ending = last.slice(-minShared);
+  if (last.length < minShared || !word.endsWith(ending) || word === last) return { ok: false, error: `"${word}" does not rhyme with "${last}" (must end in "${ending}")`, word };
+  return { ok: true, value: C.appendChained(chain, tiles, morpheme(tiles, round, card), chain.tiles.length) };
+};
+
+/** Infix: a dictionary word inserted between two morphemes (`insertAfter` is passed by the reducer). */
+export const infix: StepEffect = (chain, tiles, dict, round, card) => {
+  const word = C.lettersOf(tiles);
+  if (word.length < 2) return { ok: false, error: 'an infix needs at least 2 letters', word };
+  if (!dict.has(word)) return { ok: false, error: `"${word}" is not in the dictionary`, word };
+  const after = Number(card.params.insertAfter ?? -1);
+  return C.insertMorpheme(chain, after, tiles, C.newMorpheme(tiles, 'insert', round, card.id));
+};
+
 export const stepEffects = {
   before_and_after: beforeAndAfter,
   reduplication,
   hyphen,
   blend,
   free_morpheme: freeMorpheme,
+  rhyme,
+  infix,
 } satisfies Partial<Record<CardSpec['effectId'], StepEffect>>;
 
 export type StepEffectId = keyof typeof stepEffects;

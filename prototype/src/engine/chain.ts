@@ -308,3 +308,68 @@ export function appendChained(chain: Chain, tiles: readonly Tile[], morpheme: Mo
 export function newMorpheme(tiles: readonly Tile[], side: MorphemeSide, round: number, viaCard?: string): Morpheme {
   return makeMorpheme(tiles, side, round, viaCard);
 }
+
+/**
+ * Infix: insert tiles as a new morpheme after morpheme `afterIndex`. The
+ * chain stops being natural; the head word is clipped at the insertion and
+ * the tail word is whatever follows it.
+ */
+export function insertMorpheme(chain: Chain, afterIndex: number, tiles: readonly Tile[], morpheme: Morpheme): Result<Chain> {
+  if (afterIndex < 0 || afterIndex >= chain.morphemes.length - 1) return { ok: false, error: 'insert between two existing morphemes' };
+  const ranges = morphemeRanges(chain);
+  const p = ranges[afterIndex]![1];
+  const L = tiles.length;
+  const newTiles = [...chain.tiles.slice(0, p), ...tiles, ...chain.tiles.slice(p)];
+  const morphemes = [...chain.morphemes.slice(0, afterIndex + 1), morpheme, ...chain.morphemes.slice(afterIndex + 1)];
+  const headSpan: Span = [0, Math.min(chain.headSpan[1], p)];
+  const tailSpan: Span = chain.tailSpan[0] >= p ? shiftSpan(chain.tailSpan, L) : [p + L, newTiles.length];
+  return { ok: true, value: { tiles: newTiles, morphemes, headSpan, tailSpan, natural: false } };
+}
+
+/** Gemination: a copy of a tile placed right after it, in the same morpheme. */
+export function duplicateTile(chain: Chain, tileId: string, copyId: string): Result<Chain> {
+  const i = indexOfTile(chain, tileId);
+  if (i === -1) return { ok: false, error: `tile ${tileId} not in chain` };
+  const src = chain.tiles[i] as Tile;
+  const copy: Tile = { ...src, id: copyId, modifiers: [...src.modifiers] };
+  const tiles = [...chain.tiles.slice(0, i + 1), copy, ...chain.tiles.slice(i + 1)];
+  const morphemes = chain.morphemes.map((m) => {
+    const k = m.tileIds.indexOf(tileId);
+    return k === -1 ? m : { ...m, tileIds: [...m.tileIds.slice(0, k + 1), copyId, ...m.tileIds.slice(k + 1)] };
+  });
+  const grow = (s: Span): Span => [s[0] > i ? s[0] + 1 : s[0], s[1] > i ? s[1] + 1 : s[1]];
+  return { ok: true, value: { ...chain, tiles, morphemes, headSpan: grow(chain.headSpan), tailSpan: grow(chain.tailSpan) } };
+}
+
+/** Anagram: reorder the tiles of the last morpheme to spell `letters`. */
+export function anagramLastMorpheme(chain: Chain, letters: string): Result<Chain> {
+  const last = lastMorpheme(chain);
+  const byId = new Map(chain.tiles.map((t) => [t.id, t]));
+  const tiles = last.tileIds.map((id) => byId.get(id)!);
+  const want = letters.toUpperCase();
+  if (want.length !== tiles.length) return { ok: false, error: `use exactly the ${tiles.length} letters of "${morphemeText(chain, last)}"` };
+  const remaining = tiles.slice();
+  const ordered: Tile[] = [];
+  for (const ch of want) {
+    const k = remaining.findIndex((t) => tileLetter(t) === ch);
+    if (k === -1) return { ok: false, error: `"${letters}" is not an anagram of "${morphemeText(chain, last)}"` };
+    ordered.push(remaining.splice(k, 1)[0]!);
+  }
+  const start = morphemeStart(chain, last);
+  const newTiles = [...chain.tiles.slice(0, start), ...ordered, ...chain.tiles.slice(start + ordered.length)];
+  const morphemes = chain.morphemes.map((m) => (m === last ? { ...m, tileIds: ordered.map((t) => t.id) } : m));
+  return { ok: true, value: { ...chain, tiles: newTiles, morphemes, tailSpan: [start, chain.tiles.length], natural: false } };
+}
+
+/** Backformation: remove the last morpheme (its tiles are returned to the caller). */
+export function removeLastMorpheme(chain: Chain): Result<{ chain: Chain; removed: Tile[] }> {
+  if (chain.morphemes.length < 2) return { ok: false, error: 'the word needs at least two morphemes' };
+  const last = lastMorpheme(chain);
+  const start = morphemeStart(chain, last);
+  const removed = chain.tiles.slice(start);
+  const tiles = chain.tiles.slice(0, start);
+  const morphemes = chain.morphemes.slice(0, -1);
+  const clip = (s: Span): Span => [Math.min(s[0], tiles.length), Math.min(s[1], tiles.length)];
+  const tailSpan = clip(chain.tailSpan);
+  return { ok: true, value: { removed, chain: { ...chain, tiles, morphemes, headSpan: clip(chain.headSpan), tailSpan: tailSpan[1] - tailSpan[0] >= 1 ? tailSpan : [Math.max(0, tiles.length - last.tileIds.length), tiles.length] } } };
+}
