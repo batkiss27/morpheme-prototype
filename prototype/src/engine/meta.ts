@@ -210,6 +210,17 @@ export function applyRunEnd(meta: MetaState, state: RunState, content: EngineCon
   const { history } = replayWithHistory(exportRun(state), content);
   const facts = runFacts(state, history, content);
   let lexicon = facts.roundsCleared * balance.meta.lexiconPerRoundCleared + facts.bossesBeaten * balance.meta.lexiconPerBossBeaten + (facts.won ? balance.meta.lexiconPerWin : 0);
+  // Boss-based budget growth: each boss beaten adds a point while the budget is under that boss's cap.
+  let budget = meta.loadoutBudget;
+  let fromBosses = 0;
+  for (let k = 1; k <= facts.bossesBeaten; k++) {
+    const cap = balance.meta.bossBudget.caps[k - 1] ?? balance.meta.loadoutBudgetCap;
+    if (budget < cap) {
+      const gain = Math.min(balance.meta.bossBudget.perBoss, cap - budget);
+      budget += gain;
+      fromBosses += gain;
+    }
+  }
   let loadout = 0;
   let challenges = false;
   const earned: string[] = [];
@@ -228,7 +239,7 @@ export function applyRunEnd(meta: MetaState, state: RunState, content: EngineCon
     ...meta,
     lexiconPoints: meta.lexiconPoints + lexicon,
     achievements: [...meta.achievements, ...earned],
-    loadoutBudget: Math.min(balance.meta.loadoutBudgetCap, meta.loadoutBudget + loadout),
+    loadoutBudget: Math.min(balance.meta.loadoutBudgetCap, budget + loadout),
     challengesUnlocked: meta.challengesUnlocked || challenges,
     unlockedCards: [...unlockedCards],
     unlockedModifiers: [...unlockedModifiers],
@@ -236,5 +247,14 @@ export function applyRunEnd(meta: MetaState, state: RunState, content: EngineCon
     wins: meta.wins + (facts.won ? 1 : 0),
     loadout: state.preRun,
   };
-  return { meta: next, awards: { lexiconPoints: lexicon, achievements: earned, loadoutPoints: loadout, challengesUnlocked: challenges && !meta.challengesUnlocked } };
+  return {
+    meta: next,
+    awards: {
+      lexiconPoints: lexicon,
+      achievements: earned,
+      loadoutPoints: next.loadoutBudget - meta.loadoutBudget,
+      loadoutFromBosses: fromBosses,
+      challengesUnlocked: challenges && !meta.challengesUnlocked,
+    },
+  };
 }

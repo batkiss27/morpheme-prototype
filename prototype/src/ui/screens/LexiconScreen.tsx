@@ -53,9 +53,9 @@ export function LexiconScreen() {
         <span>
           Lexicon points <strong>{meta.lexiconPoints}</strong>
         </span>
-        <span>
+        <span title={`Each boss beaten adds ${balance.meta.bossBudget.perBoss} up to ${balance.meta.bossBudget.caps.join(' / ')} (B1–B6); achievements add more, up to ${balance.meta.loadoutBudgetCap}.`}>
           Loadout budget <strong>{Math.min(meta.loadoutBudget, balance.meta.loadoutBudgetCap)}</strong>
-          <span className="muted"> / cap {balance.meta.loadoutBudgetCap}</span>
+          <span className="muted"> / cap {balance.meta.loadoutBudgetCap} · grows per boss beaten</span>
         </span>
         <span>
           Achievements <strong>{meta.achievements.length}</strong> / {c?.achievements.length ?? '…'}

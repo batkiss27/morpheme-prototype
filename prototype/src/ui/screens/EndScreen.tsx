@@ -52,7 +52,11 @@ export function EndScreen({ run }: { run: RunState }) {
             {awards.loadoutPoints > 0 && (
               <>
                 {' · '}
-                <strong>+{awards.loadoutPoints}</strong> loadout budget
+                <strong>+{awards.loadoutPoints}</strong> loadout budget{' '}
+                <span className="muted">
+                  (now {meta.loadoutBudget}
+                  {awards.loadoutFromBosses > 0 ? `; ${awards.loadoutFromBosses} from bosses beaten` : ''})
+                </span>
               </>
             )}
             {awards.challengesUnlocked && <span className="badge badge--warn">challenge modifiers unlocked</span>}

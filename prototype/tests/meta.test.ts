@@ -198,7 +198,7 @@ describe('achievements & awards (P7-02)', () => {
     expect(awards.achievements).toEqual(expect.arrayContaining(['first_word', 'first_blood', 'victory', 'deathless', 'purists_pride', 'unaided']));
     expect(awards.challengesUnlocked).toBe(true);
     expect(meta.challengesUnlocked).toBe(true);
-    expect(meta.loadoutBudget).toBe(4 + 2 + 1);
+    expect(meta.loadoutBudget).toBe(4 + 1 + 2 + 1); // B1 budget point + Victory + Unaided
     expect(meta.unlockedModifiers).toContain('polyglot');
     // 3 rounds + 1 boss + win + first_blood 2 + victory 5 + deathless 5 + purist 8 + unaided 8
     expect(awards.lexiconPoints).toBe(3 + 2 + 5 + 2 + 5 + 5 + 8 + 8);
@@ -244,5 +244,65 @@ describe('achievements & awards (P7-02)', () => {
     expect(awards.achievements).toContain('first_word');
     expect(awards.achievements).toContain('two_step');
     void withCards;
+  });
+});
+
+describe('loadout budget grows per boss beaten', () => {
+  const cc = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowth: 1 } }));
+
+  /** A finished run with `bosses` bosses beaten (0–5) and then a loss. */
+  function runWithBosses(bosses: number, seed = 1): RunState {
+    let s = createRun(seed, lo({}), cc);
+    for (let k = 0; k < bosses; k++) {
+      for (let i = 0; i < 3; i++) s = playRegularRound(s, cc);
+      s = playBossRound(s, cc, 10_000);
+    }
+    for (let i = 0; i < 3; i++) s = playRegularRound(s, cc);
+    s = playBossRound({ ...s, lives: 0 }, cc, 0); // a reward may have granted a life; the final boss must end the run
+    return s;
+  }
+
+  it('B1 adds one point up to 6; a second B1 win adds again until the cap', () => {
+    let meta = M.createMeta(b);
+    const s = runWithBosses(1);
+    expect(s.phase).toBe('GAME_OVER');
+    let r = M.applyRunEnd(meta, s, cc);
+    expect(r.awards.loadoutFromBosses).toBe(1);
+    expect(r.meta.loadoutBudget).toBe(5);
+    r = M.applyRunEnd(r.meta, s, cc);
+    expect(r.meta.loadoutBudget).toBe(6);
+    r = M.applyRunEnd(r.meta, s, cc);
+    expect(r.meta.loadoutBudget).toBe(6); // B1 alone never passes 6
+    expect(r.awards.loadoutFromBosses).toBe(0);
+  });
+
+  it('each boss has its own cap: B1..B3 in one run → +3 (4 → 7); repeating reaches 10', () => {
+    const s = runWithBosses(3);
+    let r = M.applyRunEnd(M.createMeta(b), s, cc);
+    expect(r.awards.loadoutFromBosses).toBe(3);
+    expect(r.meta.loadoutBudget).toBe(7 + 1); // + Halfway achievement (B3)
+    for (let i = 0; i < 5; i++) r = M.applyRunEnd(r.meta, s, cc);
+    expect(r.meta.loadoutBudget).toBe(10); // B3 cap
+  });
+
+  it('caps: B1 6, B2 8, B3 10, B4 12, B5 14, B6 16; achievements still add beyond, up to 20', () => {
+    const budget = (start: number, bosses: number) => M.applyRunEnd({ ...M.createMeta(b), loadoutBudget: start, achievements: ['first_word', 'first_blood', 'halfway', 'victory', 'deathless', 'purists_pride', 'unaided'] }, runWithBosses(bosses), cc).meta.loadoutBudget;
+    expect(budget(5, 1)).toBe(6);
+    expect(budget(6, 1)).toBe(6);
+    expect(budget(6, 2)).toBe(7);
+    expect(budget(9, 3)).toBe(10);
+    expect(budget(10, 3)).toBe(10);
+    expect(budget(11, 5)).toBe(13); // B4 (cap 12): 11→12; B5 (cap 14): 12→13
+    expect(budget(15, 5)).toBe(15);
+    expect(budget(16, 5)).toBe(16);
+    // a fresh profile beating B1 in a full win: +6 boss points (4→10) + Victory +2 + Unaided +1
+    const win = M.applyRunEnd(M.createMeta(b), (() => {
+      const short = makeContent(anyDict, balanceWith({ rounds: { total: 4 }, scoring: { round1Threshold: 1 } }));
+      let s = createRun(2, lo({}), short);
+      for (let i = 0; i < 3; i++) s = playRegularRound(s, short);
+      return playBossRound(s, short, 10_000);
+    })(), makeContent(anyDict, balanceWith({ rounds: { total: 4 }, scoring: { round1Threshold: 1 } })));
+    expect(win.awards.loadoutFromBosses).toBe(1);
+    expect(win.meta.loadoutBudget).toBe(4 + 1 + 2 + 1);
   });
 });

@@ -291,7 +291,10 @@ export interface RunAwards {
   lexiconPoints: number;
   /** Achievement ids earned for the first time. */
   achievements: string[];
+  /** Total loadout budget gained (bosses + achievements). */
   loadoutPoints: number;
+  /** Part of `loadoutPoints` that came from bosses beaten (Pre-Run Modifiers tab). */
+  loadoutFromBosses: number;
   challengesUnlocked: boolean;
 }
 

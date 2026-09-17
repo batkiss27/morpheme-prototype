@@ -106,6 +106,12 @@ export interface Balance {
     levelCosts: number[];
     loadoutBudgetStart: number;
     loadoutBudgetCap: number;
+    /**
+     * Beating boss k in a run grants `perBoss` loadout budget while the budget
+     * is below `caps[k − 1]` (B1 → 6, B2 → 8, … B6 → 16). Achievements add
+     * on top, up to `loadoutBudgetCap`.
+     */
+    bossBudget: { perBoss: number; caps: number[] };
     modifiedLettersCap: number;
     /** Base Lexicon award per run (Achievements tab note). */
     lexiconPerRoundCleared: number;
@@ -193,6 +199,7 @@ export const defaultBalance: Balance = {
     levelCosts: [2, 4, 7, 11],
     loadoutBudgetStart: 4,
     loadoutBudgetCap: 20,
+    bossBudget: { perBoss: 1, caps: [6, 8, 10, 12, 14, 16] },
     modifiedLettersCap: 8,
     lexiconPerRoundCleared: 1,
     lexiconPerBossBeaten: 2,

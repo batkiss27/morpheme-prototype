@@ -1,6 +1,6 @@
 # Morpheme — Game Design Document
 
-> **Status:** Early brainstorm, revision 4 (rev 4: hand size 10, round-1 threshold 4, Steep Curve risk modifier). This document is the narrative design;
+> **Status:** Early brainstorm, revision 5 (rev 5: loadout budget grows per boss beaten; rev 4: hand size 10, round-1 threshold 4, Steep Curve). This document is the narrative design;
 > the companion workbook **`Morpheme_Master.xlsx`** is the master list of values
 > (tiles, cards, modifiers, economy, scoring scenarios, achievements). When the two
 > disagree, the spreadsheet wins for values and this document wins for rules.
@@ -400,7 +400,8 @@ on base economy) and easter eggs (secret words) are included. Full list in the
 ### 6.2 The Lexicon screen (between runs)
 1. Cards and modifiers **unlock** from the previous run's achievements.
 2. **Lexicon points** are awarded for distance reached plus achievement bonuses.
-3. The **loadout budget** grows if milestones were hit.
+3. The **loadout budget** grows per boss beaten (§6.3) and if achievement
+   milestones were hit.
 4. Points are spent on **tile levels** and **pre-run modifier levels**; each
    successive level costs more (illustrative 2 / 4 / 7 / 11). Points may be
    saved, but levels can't be skipped, so saving only buys several at once.
@@ -410,9 +411,12 @@ on base economy) and easter eggs (secret words) are included. Full list in the
 - A shared pool of **loadout points** spent on tile modifiers (cost = level) and
   pre-run modifier categories (cost = activated level; a category may be run below
   its unlocked level).
-- The budget grows with achievements and score milestones; **[proposal]** it is
-  capped (e.g. 20) and the number of modified letters is capped (e.g. 8) so
-  choices stay strategic.
+- The budget starts at 4 and grows two ways: **per boss beaten** — each boss
+  beaten in a run adds +1 while the budget is below that boss's cap (B1 → 6,
+  B2 → 8, B3 → 10, B4 → 12, B5 → 14, B6 → 16), so progress is steady but a
+  player who cannot pass B3 tops out at 10 — and through **achievements**, up
+  to the hard cap of 20. **[proposal]** the number of modified letters is
+  capped (e.g. 8) so choices stay strategic.
 
 ### 6.4 Pre-run modifiers
 - **Positive categories** (each Level 1–4, bought with Lexicon points): Second
