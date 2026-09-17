@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { meta as M } from '../../engine';
 import type { ChallengeId, Letter, PreRunCategoryId, PreRunLoadout, RiskId, TileModifierId } from '../../engine';
-import { Card, ConfirmButton } from '../components';
-import { content, loadRun, parseSeed, randomSeed, resetMeta, setLoadout, setMeta, startRun, useStore } from '../store';
+import { Card, ConfirmButton, MusicToggle } from '../components';
+import { content, debugEnabled, loadRun, parseSeed, randomSeed, resetMeta, setDebugEnabled, setLoadout, setMeta, startRun, useStore } from '../store';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') as Letter[];
 
@@ -63,6 +63,7 @@ export function LexiconScreen() {
         <span className="muted">
           runs {meta.runs} · wins {meta.wins}
         </span>
+        <MusicToggle />
         {dictionary.state === 'loading' && <span className="muted">Loading dictionary…</span>}
         {dictionary.state === 'error' && <span style={{ color: 'var(--danger)' }}>Dictionary failed: {dictionary.message}</span>}
       </div>
@@ -249,7 +250,11 @@ export function LexiconScreen() {
           {loadError && <span style={{ color: 'var(--danger)' }}>{loadError}</span>}
         </div>
         <p className="muted">
-          Add <code>?debug=1</code> to the URL for the designer panel (live balance, cheats, export).
+          Designer panel (live balance, cheats, export): {debugEnabled() ? 'on' : 'off'} —{' '}
+          <button type="button" className="btn--small" onClick={() => setDebugEnabled(!debugEnabled())}>
+            turn {debugEnabled() ? 'off' : 'on'}
+          </button>{' '}
+          (also <code>?debug=1</code> / <code>?debug=0</code> in the URL; the setting is remembered).
         </p>
       </details>
 

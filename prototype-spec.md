@@ -40,6 +40,7 @@ workflow. Anything in `DESIGN.md` marked as production-only or listed in §10.
 | RNG | Own `mulberry32`-style seeded PRNG in `engine/rng.ts` | Zero dependencies; deterministic runs. |
 | Dictionary | ENABLE1 word list (public domain) as `public/dict/enable1.txt` + `public/dict/custom.txt` | Free to use; ~173k words; custom file is the admin "add word" hook. |
 | Persistence | `localStorage` (meta-progression, settings) | Enough for a prototype. |
+| Music | Three looping MP3s in `public/audio/` (converted from the AIFF masters in `/audio`), switched by run phase in `ui/music.ts` | Real soundtrack; cues stay stubs. |
 | Package manager | npm | Lowest friction. |
 | Node | 20 LTS or newer | |
 
@@ -470,6 +471,7 @@ implements.
 | 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
 | 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
 | 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
+| 2026-09-17 | Soundtrack tracks by phase: main (Lexicon + non-boss), boss-screen (BOSS_INTRO), boss-battle (BOSS_PLAY). Debug panel enablement is remembered in localStorage. | §2, §6 |
 | 2026-09-16 | `UNDO_STEP` pops the latest snapshot, which may precede a step or a card use (`StepSnapshot.kind`); snapshots carry `steps`. Card uses outside EXTEND are not undoable. Destructive UI actions confirm inline (no `window.confirm`). | §5, §6 |
 | 2026-09-16 | Loadout budget growth per boss beaten (`balance.meta.bossBudget`), applied in `meta.applyRunEnd` before achievement rewards; `RunAwards.loadoutFromBosses` reports it. | §7 |
 | 2026-09-16 | Full card set (P8-02): `CardSpec.reusable` cards are never consumed and may be used once per round (`RunState.cardsUsedThisRound`, snapshotted for undo); `CardTarget` gained `modifier` and `letters`; `PLAY_STEP` gained `insertAfter` for Infix (`chain.insertMorpheme` clips the head span at the insertion and re-points the tail). Rhyme ≈ shared last two letters; Homophone and Preview are not implemented. | §4, §5 |

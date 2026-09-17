@@ -218,13 +218,29 @@ export function setBalance(balance: Balance): void {
   if (state.run) dispatch({ type: 'DEBUG', op: { kind: 'balance', balance } });
 }
 
-/** `?debug=1` enables the DebugPanel. */
+const DEBUG_KEY = 'morpheme.debug';
+
+/**
+ * `?debug=1` enables the DebugPanel and remembers it (localStorage), so it
+ * survives reloads and plain `localhost:5173/` visits; `?debug=0` turns it off.
+ */
 export function debugEnabled(): boolean {
   try {
-    return new URLSearchParams(window.location.search).get('debug') === '1';
+    const q = new URLSearchParams(window.location.search).get('debug');
+    if (q === '1' || q === '0') window.localStorage.setItem(DEBUG_KEY, q);
+    return (q ?? window.localStorage.getItem(DEBUG_KEY)) === '1';
   } catch {
     return false;
   }
+}
+
+export function setDebugEnabled(on: boolean): void {
+  try {
+    window.localStorage.setItem(DEBUG_KEY, on ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+  listeners.forEach((l) => l());
 }
 
 /** Replay an exported run (P6-03) and take over from its final state. */

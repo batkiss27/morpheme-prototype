@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RunState } from '../engine';
 import { playCue } from './audio';
+import * as music from './music';
 import { BossIntroScreen, BossScreen, EndScreen, LexiconScreen, RewardScreen, RoundScreen, ScoreScreen, ShopScreen } from './screens';
 import { DebugPanel } from './components';
 import { debugEnabled, endRun, loadDictionary, useStore } from './store';
@@ -14,6 +15,12 @@ export function App() {
   useEffect(() => {
     void loadDictionary();
   }, []);
+
+  // Soundtrack follows the phase: main everywhere, boss-screen at the intro, boss-battle during the round.
+  const phase = run?.phase ?? null;
+  useEffect(() => {
+    music.play(music.trackFor(phase));
+  }, [phase]);
 
   // P4-07: a 1 s "BOSS ROUND" transition when a boss round begins.
   useEffect(() => {

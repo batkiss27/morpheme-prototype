@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { boss as B, inRunMultiplier, lastError, modifiers as M, scoring, thresholdFor, tiles as T, chain as C } from '../../engine';
 import type { Dir, RunState } from '../../engine';
-import { Tile } from '../components';
+import { MusicToggle, Tile } from '../components';
 import { content, dispatch, getState, useStore } from '../store';
 
 /** One badge per active rule the player must respect right now. */
@@ -133,7 +133,10 @@ export function BossScreen({ run }: { run: RunState }) {
           <strong>{running.score.toLocaleString()}</strong> <span className="muted">/ {threshold.toLocaleString()}</span>{' '}
           {running.passed ? <span className="badge badge--pass">pass</span> : <span className="badge badge--fail">short</span>}
         </span>
-        <span className={`boss__clock ${seconds <= 10 ? 'boss__clock--low' : ''}`}>{rules.silent ? '—' : `${seconds}s`}</span>
+        <span className="row">
+          <MusicToggle />
+          <span className={`boss__clock ${seconds <= 10 ? 'boss__clock--low' : ''}`}>{rules.silent ? '—' : `${seconds}s`}</span>
+        </span>
       </div>
       <div className="timer-bar">
         <div className="timer-bar__fill" style={{ width: `${timePct}%` }} />
