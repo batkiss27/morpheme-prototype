@@ -80,6 +80,8 @@ export interface Balance {
     guaranteeExtension: boolean;
     /** Rarities the conditional in-run slot may offer (D8). */
     inRunSlotRarities: RarityKey[];
+    /** Cards the Extension guarantee may pick from (ones that work with any hand). */
+    guaranteePool: string[];
   };
   reward: {
     /** In-run modifiers offered after a boss (Polyglot adds one). */
@@ -135,7 +137,7 @@ export const defaultBalance: Balance = {
     multiplierBase: 1.4,
     round1Threshold: 4,
     thresholdGrowth: 1.5,
-    bossThresholdFactor: 1.5,
+    bossThresholdFactor: 3,
     strain: 1,
     bonusTwoSameSide: 1.5,
     bonusFrontBack: 2,
@@ -167,6 +169,7 @@ export const defaultBalance: Balance = {
     handLimits: { sound_shift: 3, extension: 3, loanword: 3, utility: 2 },
     guaranteeExtension: true,
     inRunSlotRarities: ['basic', 'uncommon'],
+    guaranteePool: ['hyphen', 'before_and_after', 'free_morpheme'],
   },
   reward: {
     offers: 3,

@@ -54,7 +54,7 @@ describe('scenario 24 (Scoring tab)', () => {
 describe('scenario 24 with Agglutination picked after B1 (P5-03)', () => {
   const b = defaultBalance;
   const perBoss = scenario.parameters.inRunMultPerBoss;
-  const bonus = 0.1;
+  const bonus = 0.03;
 
   for (const row of scenario.rounds.filter((r) => r.round >= 5)) {
     it(`round ${row.round}: base 1.5 from round 5 on`, () => {

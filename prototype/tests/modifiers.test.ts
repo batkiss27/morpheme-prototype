@@ -33,7 +33,7 @@ describe('registry (P5-01)', () => {
     expect(M.active(s2, c).map((a) => a.spec.id)).toEqual(['agglutination', 'mirror']);
     // folding is deterministic: same state → same numbers
     expect(M.multiplierBase(s, c)).toBe(M.multiplierBase(s, c));
-    expect(M.multiplierBase(s, c)).toBeCloseTo(1.5, 9);
+    expect(M.multiplierBase(s, c)).toBeCloseTo(1.43, 9);
   });
 });
 
@@ -71,14 +71,14 @@ describe('scoring modifiers (P5-03)', () => {
   });
 
   it('Agglutination raises the multiplier base; Momentum accrues per natural round', () => {
-    expect(inputs(['agglutination']).base).toBeCloseTo(1.5, 9);
+    expect(inputs(['agglutination']).base).toBeCloseTo(1.43, 9);
     const c = makeContent(anyDict, easy);
     let s: RunState = { ...newRun(c), inRun: ['momentum'] };
     expect(M.multiplierBase(s, c)).toBe(1.4);
     s = playRegularRound(s, c);
-    expect(s.modifierState.momentum).toBeCloseTo(0.05, 9);
+    expect(s.modifierState.momentum).toBeCloseTo(0.01, 9);
     s = playRegularRound(s, c);
-    expect(M.multiplierBase(s, c)).toBeCloseTo(1.5, 9);
+    expect(M.multiplierBase(s, c)).toBeCloseTo(1.42, 9);
     // a card round does not add momentum
     const { s: cs, c: cc } = withMods(['word'], ['bear'], 'word', ['momentum']);
     let t = withCards(cs, 'hyphen');
@@ -120,15 +120,15 @@ describe('scoring modifiers (P5-03)', () => {
     expect(u.strainThisRound).toBe(0);
   });
 
-  it('Chain Lightning: extension cards add +0.1 base instead of strain', () => {
+  it('Chain Lightning: extension cards add +0.02 base instead of strain', () => {
     const { s, c } = withMods(['word'], ['bear'], 'word', ['chain_lightning']);
     let t = withCards(s, 'hyphen');
     t = reduce(t, { type: 'PLAY_STEP', side: 'back', tileIds: ['hW0', 'hO1', 'hR2', 'hD3'], viaCard: 'chyphen0' }, c);
     expect(t.strainThisRound).toBe(0);
-    expect(M.multiplierBase(t, c)).toBeCloseTo(1.5, 9);
+    expect(M.multiplierBase(t, c)).toBeCloseTo(1.42, 9);
     t = reduce(t, { type: 'SUBMIT' }, c);
     expect(t.lastResult?.effectiveMorphemes).toBe(2);
-    expect(t.lastResult?.morphemeMult).toBeCloseTo(1.5, 9);
+    expect(t.lastResult?.morphemeMult).toBeCloseTo(1.42, 9);
     expect(t.streak).toBe(0); // the streak still breaks: the card was used
   });
 

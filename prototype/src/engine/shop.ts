@@ -67,7 +67,8 @@ export function buildOffers(input: BuildShopInput): { offers: ShopOffer[]; rng: 
   let s = input.rng;
   for (let slot = 0; slot < balance.shop.cardSlots; slot++) {
     const forceExtension = slot === 0 && balance.shop.guaranteeExtension && !input.heldTypes.includes('extension');
-    const pool = forceExtension ? cards.filter((c) => c.type === 'extension') : cards;
+    const guaranteed = cards.filter((c) => c.type === 'extension' && balance.shop.guaranteePool.includes(c.id));
+    const pool = forceExtension ? (guaranteed.length > 0 ? guaranteed : cards.filter((c) => c.type === 'extension')) : cards;
     let card: CardSpec | undefined;
     [card, s] = rollCard(s, pool.length > 0 ? pool : cards, balance);
     if (card) offers.push({ cardId: card.id, price: scaledPrice(card.price, input.priceMult), sold: false });

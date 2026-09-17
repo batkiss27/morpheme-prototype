@@ -89,7 +89,7 @@ describe('Steep Curve (P7-07)', () => {
     const l1 = lo({ risks: { steep_curve: 1 } });
     expect(L.thresholdScale(l1, b)).toBe(1.15);
     expect(S.threshold(1, b, 1.15)).toBe(5); // 4 × 1.15 = 4.6
-    expect(S.threshold(4, b, 1.15)).toBe(23); // 20.25 × 1.15
+    expect(S.threshold(4, b, 1.15)).toBe(47); // 40.5 × 1.15
     const s = createRun(1, l1, makeContent(anyDict));
     expect(thresholdFor(s, makeContent(anyDict))).toBe(5);
     expect(thresholdFor(s, makeContent(anyDict), 24)).toBe(S.threshold(24, b, 1.15));

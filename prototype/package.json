@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "playtest": "vite-node scripts/playtest.ts --"
   },
   "dependencies": {
     "react": "^18.3.1",

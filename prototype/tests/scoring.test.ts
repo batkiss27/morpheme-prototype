@@ -18,8 +18,8 @@ describe('rounds and thresholds', () => {
     expect(S.threshold(1, b)).toBe(4);
     expect(S.threshold(2, b)).toBe(6);
     expect(S.threshold(3, b)).toBe(9);
-    expect(S.threshold(4, b)).toBe(20); // 13.5 × 1.5 = 20.25
-    expect(S.threshold(24, b)).toBe(67336);
+    expect(S.threshold(4, b)).toBe(41); // 13.5 × 3 = 40.5
+    expect(S.threshold(24, b)).toBe(134673);
   });
 
   it('threshold responds to balance changes', () => {
@@ -109,7 +109,7 @@ describe('scoreBoss', () => {
   it('uses boss word points × morpheme mult × in-run mult, no extension bonus', () => {
     const r = S.scoreBoss({ round: 8, bossWordPoints: 52, morphemes: 6, inRunMult: 1.2 }, b);
     expect(r.score).toBe(336);
-    expect(r.threshold).toBe(103);
+    expect(r.threshold).toBe(205);
     expect(r.extensionBonus).toBe(1);
     expect(r.kind).toBe('boss');
   });

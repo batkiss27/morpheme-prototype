@@ -58,6 +58,7 @@ describe('shop generation', () => {
       const built = S.buildShop({ rng: rng.create(seed), cards: cardContent, balance: defaultBalance, heldTypes: [] });
       const first = cardContent.find((c) => c.id === built.shop.offers[0]!.cardId)!;
       expect(first.type).toBe('extension');
+      expect(defaultBalance.shop.guaranteePool).toContain(first.id);
     }
     let sawNonExtension = false;
     for (let seed = 1; seed <= 30; seed++) {
