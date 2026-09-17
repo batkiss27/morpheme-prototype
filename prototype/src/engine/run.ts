@@ -207,7 +207,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
 
     case 'PLAY_STEP': {
       if (state.phase !== 'EXTEND') return wrong();
-      const before = snapshot(state);
+      const before = snapshot(state, 'step');
       const r = action.viaCard === undefined ? playNaturalStep(state, action, content) : playCardStep(state, action, action.viaCard, content);
       if (!r.ok) return r;
       return ok({ ...r.state, undo: [...state.undo, before] });
@@ -217,7 +217,8 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.phase !== 'EXTEND') return wrong();
       const before = state.undo[state.undo.length - 1];
       if (!before) return fail('nothing to undo');
-      return ok({ ...state, ...before, steps: state.steps.slice(0, -1), undo: state.undo.slice(0, -1) });
+      const { kind: _kind, ...restore } = before;
+      return ok({ ...state, ...restore, undo: state.undo.slice(0, -1) });
     }
 
     case 'SUBMIT': {
@@ -282,7 +283,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       // Give up the round: everything since the first step is undone, the
       // hand returns to the pool, and the round scores 0 (always a fail).
       const first = state.undo[0];
-      const reverted: RunState = first ? { ...state, ...first } : state;
+      const reverted: RunState = first ? { ...state, ...(({ kind: _k, ...rest }) => rest)(first) } : state;
       const breakdown = scoring.scoreRegular(
         {
           round: state.round,
@@ -306,8 +307,12 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       });
     }
 
-    case 'USE_CARD':
-      return useCard(state, action.instanceId, action.target ?? {}, content);
+    case 'USE_CARD': {
+      const r = useCard(state, action.instanceId, action.target ?? {}, content);
+      if (!r.ok || state.phase !== 'EXTEND') return r;
+      // Card uses during a round are undoable like steps (Sound Shifts can break the word).
+      return ok({ ...r.state, undo: [...state.undo, snapshot(state, 'card')] });
+    }
 
     case 'REDRAW': {
       if (state.phase !== 'EXTEND') return wrong();
@@ -533,8 +538,10 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
 // Steps
 // ---------------------------------------------------------------------------
 
-function snapshot(state: RunState): StepSnapshot {
+function snapshot(state: RunState, kind: StepSnapshot['kind']): StepSnapshot {
   return {
+    kind,
+    steps: state.steps,
     chain: state.chain,
     hand: state.hand,
     pool: state.pool,

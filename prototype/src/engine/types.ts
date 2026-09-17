@@ -465,10 +465,15 @@ export interface StepRecord {
 }
 
 /**
- * Everything a step can change, captured before the step so UNDO_STEP can
- * restore it exactly (cards used after the step are restored too).
+ * Everything a step or a card use can change, captured before it so
+ * UNDO_STEP can restore it exactly. Sound Shifts and other instant cards used
+ * during a round push a snapshot too, so a shift that breaks the word can be
+ * taken back.
  */
 export interface StepSnapshot {
+  /** What this snapshot precedes. */
+  kind: 'step' | 'card';
+  steps: StepRecord[];
   chain: Chain | null;
   hand: Tile[];
   pool: Tile[];

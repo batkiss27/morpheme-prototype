@@ -7,3 +7,4 @@ export { ModifierPanel } from './ModifierPanel';
 export { RoundTable } from './RoundTable';
 export { DebugPanel } from './DebugPanel';
 export { BossPreview } from './BossPreview';
+export { ConfirmButton } from './ConfirmButton';

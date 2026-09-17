@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cards as cardFns, chain as C, lastError, scoring, scoringInputs, thresholdFor, tiles as T } from '../../engine';
 import type { CardInstance, CardSpec, Dictionary, Letter, RunState, Side, Tile as TileModel } from '../../engine';
-import { BossPreview, CardPanel, ChainView, RunHeader, Tile } from '../components';
+import { BossPreview, CardPanel, ChainView, ConfirmButton, RunHeader, Tile } from '../components';
 import { content, dispatch, useStore } from '../store';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') as Letter[];
@@ -384,8 +384,8 @@ export function RoundScreen({ run }: { run: RunState }) {
               </p>
             )}
             <div className="row" style={{ marginTop: 8 }}>
-              <button type="button" disabled={run.steps.length === 0} onClick={() => dispatch({ type: 'UNDO_STEP' })}>
-                Undo last step
+              <button type="button" disabled={run.undo.length === 0} onClick={() => dispatch({ type: 'UNDO_STEP' })} title="Undoes the last step or card use this round">
+                Undo {run.undo.length > 0 ? (run.undo[run.undo.length - 1]!.kind === 'card' ? 'last card' : 'last step') : ''}
               </button>
             </div>
           </div>
@@ -416,15 +416,11 @@ export function RoundScreen({ run }: { run: RunState }) {
           <div className="panel">
             <h3>Stuck?</h3>
             <p className="muted">No valid extension in hand? Forfeiting scores 0 and fails the threshold.</p>
-            <button
-              type="button"
-              className="btn--danger"
-              onClick={() => {
-                if (window.confirm('Forfeit this round? It will score 0 and fail the threshold.')) dispatch({ type: 'FORFEIT' });
-              }}
-            >
-              Forfeit round
-            </button>
+            <ConfirmButton
+              label="Forfeit round"
+              confirmLabel={run.lives > 0 ? `Forfeit — lose a life (${run.lives} left)` : 'Forfeit — the run ends'}
+              onConfirm={() => dispatch({ type: 'FORFEIT' })}
+            />
           </div>
         </div>
       </div>

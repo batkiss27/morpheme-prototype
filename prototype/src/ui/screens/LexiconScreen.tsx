@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { meta as M } from '../../engine';
 import type { ChallengeId, Letter, PreRunCategoryId, PreRunLoadout, RiskId, TileModifierId } from '../../engine';
-import { Card } from '../components';
+import { Card, ConfirmButton } from '../components';
 import { content, loadRun, parseSeed, randomSeed, resetMeta, setLoadout, setMeta, startRun, useStore } from '../store';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') as Letter[];
@@ -222,15 +222,7 @@ export function LexiconScreen() {
             ) : (
               <p>{meta.achievements.map((id) => c?.achievements.find((a) => a.id === id)?.name ?? id).join(' · ')}</p>
             )}
-            <button
-              type="button"
-              className="btn--danger btn--small"
-              onClick={() => {
-                if (window.confirm('Reset all progression (points, levels, achievements)?')) resetMeta();
-              }}
-            >
-              Reset progression
-            </button>
+            <ConfirmButton label="Reset progression" confirmLabel="Reset everything" className="btn--danger btn--small" onConfirm={resetMeta} />
           </div>
         </div>
       </div>

@@ -230,15 +230,43 @@ describe('sound shift cards', () => {
     expect(lastError(reduce(s, { type: 'USE_CARD', instanceId: 'cglide0', target: { tileId: 'hX0' } }, c))).toMatch(/not in the word/);
   });
 
-  it('undoing a step also reverts a shift used after it', () => {
+  it('undo is LIFO over steps and card uses: a shift after a step is undone first, then the step', () => {
     const { s, c } = extendState(['bearable', 'bearables'], 'sx', 'glide');
     const s1 = reduce(s, { type: 'PLAY_STEP', side: 'back', tileIds: ['hS0'] }, c);
     const s2 = reduce(s1, { type: 'USE_CARD', instanceId: 'cglide0', target: { tileId: 'm0E1' } }, c);
     expect(C.text(s2.chain!)).toBe('byarables');
+    expect(s2.undo.map((u) => u.kind)).toEqual(['step', 'card']);
     const s3 = reduce(s2, { type: 'UNDO_STEP' }, c);
-    expect(s3.chain).toEqual(s.chain);
+    expect(C.text(s3.chain!)).toBe('bearables');
     expect(s3.cards).toHaveLength(1);
     expect(s3.chainDirty).toBe(false);
+    expect(s3.steps).toHaveLength(1);
+    const s4 = reduce(s3, { type: 'UNDO_STEP' }, c);
+    expect(s4.chain).toEqual(s.chain);
+    expect(s4.steps).toEqual([]);
+    expect(s4.hand).toHaveLength(2);
+    expect(lastError(reduce(s4, { type: 'UNDO_STEP' }, c))).toMatch(/nothing to undo/);
+  });
+
+  it('a Sound Shift that breaks the word can be undone on its own (the card comes back)', () => {
+    const { s, c } = extendState(['bearable'], 'x', 'glide');
+    const shifted = reduce(s, { type: 'USE_CARD', instanceId: 'cglide0', target: { tileId: 'm0E1' } }, c);
+    expect(shifted.chainDirty).toBe(true);
+    expect(shifted.cards).toEqual([]);
+    const back = reduce(shifted, { type: 'UNDO_STEP' }, c);
+    expect(back.chain).toEqual(s.chain);
+    expect(back.chainDirty).toBe(false);
+    expect(back.cards.map((x) => x.cardId)).toEqual(['glide']);
+    expect(back.undo).toEqual([]);
+  });
+
+  it('card uses outside a round (shop) are not undoable', () => {
+    const c = makeContent(anyDict, easy);
+    let s = playFromHand(reduce(newRun(c), { type: 'START_ROUND' }, c), c, 2, 'start');
+    s = reduce(reduce(s, { type: 'SUBMIT' }, c), { type: 'CONTINUE' }, c);
+    s = withCards(s, 'loanword');
+    s = reduce(s, { type: 'USE_CARD', instanceId: 'cloanword0', target: { letter: 'E' } }, c);
+    expect(s.undo).toEqual([]);
   });
 });
 

@@ -444,6 +444,10 @@ marked done.
 When a decision is made: move it to the Decision Log below, update the affected
 section, and update `DESIGN.md` if the product rule changed.
 
+Open design decisions are tracked in the workbook's **Decisions** tab (one row per
+call, with evidence, options and status); this table records what the prototype
+implements.
+
 ### Decision log
 
 | Date | Decision | Where reflected |
@@ -466,6 +470,7 @@ section, and update `DESIGN.md` if the product rule changed.
 | 2026-09-16 | Redraw is only usable before the first step of a round (otherwise undo snapshots could duplicate tiles). | §4 |
 | 2026-09-16 | Shop: 3 slots by rarity odds with fallback to a lower rarity when the pool lacks one; slot 1 forced to an Extension card when none is held (`balance.shop.guaranteeExtension`); per-type hand limits 3/3/3/2; tile action = add or remove only; reroll 2 +1; sell at 50% floored. Loanword/Echo may be used in SHOP. | §5, §7 |
 | 2026-09-16 | Insurance adds a fourth round outcome `insured` (no life lost, no shop). Bank doubles `currencyEarned`. Lexicographer sets a round flag the UI reads. Amendment sets `flags.amendmentUsed` until M4. | §5 |
+| 2026-09-16 | `UNDO_STEP` pops the latest snapshot, which may precede a step or a card use (`StepSnapshot.kind`); snapshots carry `steps`. Card uses outside EXTEND are not undoable. Destructive UI actions confirm inline (no `window.confirm`). | §5, §6 |
 | 2026-09-16 | Loadout budget growth per boss beaten (`balance.meta.bossBudget`), applied in `meta.applyRunEnd` before achievement rewards; `RunAwards.loadoutFromBosses` reports it. | §7 |
 | 2026-09-16 | Full card set (P8-02): `CardSpec.reusable` cards are never consumed and may be used once per round (`RunState.cardsUsedThisRound`, snapshotted for undo); `CardTarget` gained `modifier` and `letters`; `PLAY_STEP` gained `insertAfter` for Infix (`chain.insertMorpheme` clips the head span at the insertion and re-points the tail). Rhyme ≈ shared last two letters; Homophone and Preview are not implemented. | §4, §5 |
 | 2026-09-16 | Full in-run and boss modifier sets (P8-03). Hook `morphemeValue(ctx, info, points)` folds over the morpheme's base points; new hooks listed in `modifiers/hooks.ts`. Boss rules resolved at `START_BOSS` include the grid size (Mirror Board) and direction / crossing rules validated with a `PlacementContext`. | §5, §7 |

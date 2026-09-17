@@ -7,6 +7,9 @@
 >
 > Ideas marked **[proposal]** go beyond the agreed concept and are open for discussion.
 >
+> **Open decisions** live in the workbook's *Decisions* tab; the first entry is a
+> re-evaluation of Sound Shift cards (see §7 item 9).
+>
 > **Terminology:** rarity tiers are **Basic / Uncommon / Exotic / Relic**. Money is
 > just **Currency** for now.
 >
@@ -461,6 +464,12 @@ Start run → pool = Scrabble set + loadout tile modifiers; pre-run modifiers ac
 7. **In-run modifier offer size** — 3 or 4, and whether rarity odds shift by boss.
 8. **Extension card frequency** — how common in shops, and whether the shop
    guarantees at least one.
+9. **Sound Shift cards** — a shift that makes the word invalid must be repaired by
+   the next step, but back-only extension cannot repair a broken *head* word and a
+   Before & After moves the tail elsewhere, so many shifts strand the run. Options
+   are logged in the *Decisions* tab (validate only touched words and allow front
+   repairs; preview-and-reject invalid shifts; shifts apply to the next step's
+   tiles; require immediate validity).
 
 ---
 
