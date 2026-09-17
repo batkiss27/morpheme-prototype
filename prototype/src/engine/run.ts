@@ -38,6 +38,7 @@ import type {
   CurrencySource,
   DebugOp,
   EngineContent,
+  Letter,
   PreRunLoadout,
   RoundResult,
   RunEvent,
@@ -114,11 +115,19 @@ export function scoringInputs(state: RunState, content: EngineContent) {
   const points = chain ? scoring.wordPointsBy(chain, state.round, mods.morphemeMultiplier(state, content)) : { total: 0, perMorpheme: [] };
   const base = mods.multiplierBase(state, content);
   const extensionBonusMult = mods.extensionBonus(state, content, kind, 1);
+  const flatBonus = mods.flatBonus(state, content);
+  const inRunMult = inRunMultiplier(state) * mods.scoreMultiplier(state, content);
   const notes: string[] = [];
-  for (const p of points.perMorpheme) if (p.mult !== 1) notes.push(`"${p.text}" scores ×${p.mult} (${p.points} pts)`);
-  if (base !== content.balance.scoring.multiplierBase) notes.push(`multiplier base ${base.toFixed(2)}`);
+  for (const p of points.perMorpheme) {
+    if (p.points === p.base) continue;
+    const isMult = Number.isInteger(p.mult) || Math.abs(p.mult * 2 - Math.round(p.mult * 2)) < 1e-9;
+    notes.push(isMult && p.base > 0 ? `"${p.text}" scores ×${p.mult} (${p.points} pts)` : `"${p.text}" +${p.points - p.base} pts`);
+  }
+  if (base !== content.balance.scoring.multiplierBase) notes.push(`multiplier base ${base.toFixed(3)}`);
   if (extensionBonusMult !== 1) notes.push(`extension bonus ×${extensionBonusMult}`);
-  return { shape, wordPoints: points.total, perMorpheme: points.perMorpheme, base, extensionBonusMult, inRunMult: inRunMultiplier(state), notes };
+  if (flatBonus !== 0) notes.push(`flat +${flatBonus}`);
+  if (inRunMult !== 1) notes.push(`round score ×${inRunMult}`);
+  return { shape, wordPoints: points.total, perMorpheme: points.perMorpheme, base, extensionBonusMult, flatBonus, inRunMult, notes };
 }
 
 // ---------------------------------------------------------------------------
@@ -179,10 +188,13 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
           endReason: null,
           rerolls: 0,
           reward: null,
+          lastDir: null,
+          lastWordCells: [],
+          scrambleTimerMs: 0,
         };
         return ok({ ...base, phase: 'BOSS_INTRO', boss: bossState, rng: r1 });
       }
-      const d = tiles.draw(state.pool, loadoutFns.handSize(state.preRun, balance), state.rng);
+      const d = tiles.draw(state.pool, mods.handSize(state, content, loadoutFns.handSize(state.preRun, balance)), state.rng);
       return ok({ ...base, phase: 'EXTEND', pool: d.pool, hand: d.drawn, rng: d.rng });
     }
 
@@ -218,6 +230,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
           strainCount: state.strainThisRound,
           extension: inputs.shape,
           inRunMult: inputs.inRunMult,
+          flatBonus: inputs.flatBonus,
           multiplierBase: inputs.base,
           extensionBonusMult: inputs.extensionBonusMult,
           thresholdScale: loadoutFns.thresholdScale(state.preRun, balance),
@@ -225,11 +238,17 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         balance,
       );
       // "Natural" = no extension card this round (Economy tab), whatever strain it caused.
-      const natural = !state.steps.some((st) => st.viaCard !== undefined);
+      let natural = !state.steps.some((st) => st.viaCard !== undefined);
+      let pre = state;
+      if (!natural) {
+        const kept = mods.keepStreak(state, content);
+        pre = kept.state;
+        natural = kept.keep;
+      }
       const streakAfter = natural ? state.streak + 1 : 0;
-      const sources = breakdown.passed ? economy.regularRoundCurrency(state, content, { breakdown, shape: inputs.shape, natural, streakAfter }) : [];
-      const criteriaMet = breakdown.passed ? economy.shopCriteria(state, breakdown, inputs.shape) : [];
-      let after = settle(state, breakdown, streakAfter, sources, inputs.notes, criteriaMet);
+      const sources = breakdown.passed ? economy.regularRoundCurrency(pre, content, { breakdown, shape: inputs.shape, natural, streakAfter }) : [];
+      const criteriaMet = breakdown.passed ? economy.shopCriteria(pre, breakdown, inputs.shape) : [];
+      let after = settle(pre, breakdown, streakAfter, sources, inputs.notes, criteriaMet, content);
       if (breakdown.passed && natural) after = mods.onNaturalRound(after, content);
       // Secret words (P5-07): the next ROUND_START jumps to the boss.
       const text = chainMod.text(chain);
@@ -269,7 +288,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         },
         balance,
       );
-      const after = settle(reverted, breakdown, 0, [], [], []);
+      const after = settle(reverted, breakdown, 0, [], [], [], content);
       return ok({
         ...after,
         phase: 'SCORED',
@@ -288,7 +307,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.freeRedraws <= 0) return fail('no free redraw left this round');
       if (state.steps.length > 0) return fail('a redraw must happen before playing a step');
       const pool = tiles.returnTiles(state.pool, state.hand);
-      const d = tiles.draw(pool, loadoutFns.handSize(state.preRun, balance), state.rng);
+      const d = tiles.draw(pool, mods.handSize(state, content, loadoutFns.handSize(state.preRun, balance)), state.rng);
       return ok({ ...state, pool: d.pool, hand: d.drawn, rng: d.rng, freeRedraws: state.freeRedraws - 1 });
     }
 
@@ -302,11 +321,11 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         return ok(state.phase === 'SCORED' ? advanceRound(state, balance) : { ...state, phase: 'ROUND_START', boss: null });
       }
       if (state.phase === 'BOSS_END') return ok({ ...state, phase: 'BOSS_REWARD' });
-      const priceMult = loadoutFns.priceMult(state.preRun, balance);
+      const priceMult = mods.priceMult(state, content, loadoutFns.priceMult(state.preRun, balance));
       const built = shopMod.buildShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), priceMult });
-      let shop = built.shop;
+      let shop = { ...built.shop, freeRerolls: mods.freeRerolls(state, content) };
       let r = built.rng;
-      const criterion = result.criteriaMet[0];
+      const criterion = mods.shopSlot(state, content, result.criteriaMet.length > 0) ? (result.criteriaMet[0] ?? 'Milestone Keeper') : undefined;
       if (criterion) {
         const slot = reward.buildShopSlotOffer({ ...state, rng: r }, content);
         r = slot.rng;
@@ -362,10 +381,13 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
 
     case 'REROLL': {
       if (state.phase !== 'SHOP' || !state.shop) return wrong();
-      const price = state.shop.rerollPrice;
+      const free = state.shop.freeRerolls > 0;
+      const price = free ? 0 : state.shop.rerollPrice;
       if (state.currency < price) return fail(`not enough currency (${price} needed)`);
-      const built = shopMod.rerollShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), previous: state.shop, priceMult: loadoutFns.priceMult(state.preRun, balance) });
-      return ok({ ...state, currency: state.currency - price, shop: built.shop, rng: built.rng });
+      const priceMult = mods.priceMult(state, content, loadoutFns.priceMult(state.preRun, balance));
+      const built = shopMod.rerollShop({ rng: state.rng, cards: content.cards, balance, heldTypes: heldTypes(state, content), previous: state.shop, priceMult });
+      const shop = free ? { ...built.shop, rerolls: state.shop.rerolls, rerollPrice: state.shop.rerollPrice, freeRerolls: state.shop.freeRerolls - 1 } : built.shop;
+      return ok({ ...state, currency: state.currency - price, shop, rng: built.rng });
     }
 
     case 'BUY_IN_RUN': {
@@ -374,12 +396,13 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (!offer) return fail('no in-run modifier is on offer');
       if (offer.sold) return fail('that modifier is sold');
       if (state.currency < offer.price) return fail(`not enough currency (${offer.price} needed)`);
-      return ok({
+      const next: RunState = {
         ...state,
         currency: state.currency - offer.price,
         inRun: [...state.inRun, offer.modifierId],
         shop: { ...state.shop, inRunOffer: { ...offer, sold: true } },
-      });
+      };
+      return ok(mods.onAcquire(next, content, offer.modifierId));
     }
 
     case 'SELL': {
@@ -402,17 +425,34 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (state.phase !== 'BOSS_INTRO' || !state.boss) return wrong();
       const b = state.boss;
       const mod = content.bossModifiers.find((m) => m.id === b.modifierId);
-      const rules = mods.bossRules(state, content, loadoutFns.bossRules(state.preRun, balance, boss.applyModifier(boss.baseRules(b.bossNumber, balance), mod)));
+      let rules = mods.bossRules(state, content, loadoutFns.bossRules(state.preRun, balance, boss.applyModifier(boss.baseRules(b.bossNumber, balance), mod)));
       const chainTiles = state.chain?.tiles ?? [];
-      const board = state.chain ? boss.placeStarter(b.board, boss.starterTiles(state.chain, b.bossNumber, balance, rules)) : b.board;
-      let [queue, r1] = boss.buildQueue(chainTiles, state.rng, 1);
+      let r0 = state.rng;
+      if (mod?.hookId === 'dead_letter') {
+        let dead: Letter;
+        [dead, r0] = boss.rollDeadLetter(chainTiles.map((t) => tiles.tileLetter(t)), r0);
+        rules = { ...rules, deadLetter: dead };
+      }
+      const starter = state.chain ? boss.starterTiles(state.chain, b.bossNumber, { ...balance, boss: { ...balance.boss, gridSize: rules.gridSize } }, rules) : [];
+      const board = boss.placeStarter(boss.createBoard(rules.gridSize), starter);
+      let [queue, r1] = boss.buildQueue(chainTiles, r0, 1, rules);
       if (rules.vowelsToY) queue = boss.applyVowelsToY(queue);
       const rack = queue.slice(0, rules.startingRack);
       return ok({
         ...state,
         phase: 'BOSS_PLAY',
         rng: r1,
-        boss: { ...b, rules, board, rack, queue: queue.slice(rules.startingRack), cycle: 1, timeLeftMs: rules.timerMs, feedTimerMs: rules.feedIntervalMs },
+        boss: {
+          ...b,
+          rules,
+          board,
+          rack,
+          queue: queue.slice(rules.startingRack),
+          cycle: 1,
+          timeLeftMs: rules.timerMs,
+          feedTimerMs: rules.feedIntervalMs,
+          scrambleTimerMs: rules.scrambleMs,
+        },
       });
     }
 
@@ -433,17 +473,21 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (!resolved.ok) return fail(resolved.error);
       const placements = boss.placementsFor(b.board, action.row, action.col, action.dir, resolved.value.used);
       if (!placements.ok) return fail(placements.error);
-      const v = boss.validatePlacement(b.board, placements.value, content.dictionary, rules);
+      const v = boss.validatePlacement(b.board, placements.value, content.dictionary, rules, { wordsPlaced: b.words.length, lastDir: b.lastDir, lastWordCells: b.lastWordCells });
       if (!v.ok) return fail(v.error);
       const entry = { word: v.value.main.word, crossWords: v.value.cross.map((w) => w.word), points: v.value.points, atMs: rules.timerMs - b.timeLeftMs };
+      const toll = Math.min(state.currency, rules.tollPerWord);
       return ok({
         ...state,
+        currency: state.currency - toll,
         boss: {
           ...b,
           board: boss.applyPlacement(b.board, placements.value),
           rack: resolved.value.rack,
           wordPoints: b.wordPoints + v.value.points,
           words: [...b.words, entry],
+          lastDir: action.dir,
+          lastWordCells: [...v.value.main.cells, ...v.value.cross.flatMap((w) => w.cells)],
         },
       });
     }
@@ -461,7 +505,7 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
         if (!offer.offers.includes(action.id)) return fail(`${action.id} is not on offer`);
         const remaining = offer.offers.filter((id) => id !== action.id);
         const picksLeft = offer.picksLeft - 1;
-        const next: RunState = { ...state, inRun: [...state.inRun, action.id], boss: { ...state.boss, reward: { offers: remaining, picksLeft } } };
+        const next: RunState = mods.onAcquire({ ...state, inRun: [...state.inRun, action.id], boss: { ...state.boss, reward: { offers: remaining, picksLeft } } }, content, action.id);
         if (picksLeft > 0 && remaining.length > 0) return ok(next);
         return ok(advanceRound({ ...next, boss: null }, balance));
       }
@@ -585,12 +629,19 @@ function settle(
   sources: CurrencySource[],
   notes: string[],
   criteriaMet: string[],
+  content: EngineContent,
 ): RunState {
   const base = { ...breakdown, notes, criteriaMet };
   if (breakdown.passed) {
     const earned = economy.total(sources);
     const result: RoundResult = { ...base, outcome: 'pass', currencyEarned: earned, currencySources: sources };
     return { ...state, lastResult: result, streak: streakIfPassed, currency: state.currency + earned };
+  }
+  const immortal = mods.ignoreFail(state, content);
+  if (immortal.ignore) {
+    // Immortal Word: treated as a pass with no currency.
+    const result: RoundResult = { ...base, passed: true, outcome: 'pass', currencyEarned: 0, currencySources: [], notes: [...notes, 'Immortal Word ignored the failed threshold'] };
+    return { ...immortal.state, lastResult: result, streak: streakIfPassed };
   }
   const failed = { ...base, currencyEarned: 0, currencySources: [] as CurrencySource[] };
   if (state.roundEffects.insurance) return { ...state, lastResult: { ...failed, outcome: 'insured' }, streak: 0 };
@@ -649,7 +700,7 @@ function debug(state: RunState, op: DebugOp, content: EngineContent): Step {
 function finishBoss(state: RunState, wordPoints: number, reason: 'timer' | 'overflow' | 'ended', content: EngineContent): RunState {
   const { balance } = content;
   const b = state.boss as BossState;
-  const morphemes = state.chain ? chainMod.morphemeCount(state.chain) : 1;
+  const morphemes = Math.max(1, (state.chain ? chainMod.morphemeCount(state.chain) : 1) - (b.rules?.morphemePenalty ?? 0));
   const base = mods.multiplierBase(state, content);
   const breakdown = scoring.scoreBoss(
     {
@@ -663,7 +714,7 @@ function finishBoss(state: RunState, wordPoints: number, reason: 'timer' | 'over
     balance,
   );
   const notes = base !== balance.scoring.multiplierBase ? [`multiplier base ${base.toFixed(2)}`] : [];
-  const after = settle(state, breakdown, state.streak, breakdown.passed ? economy.bossCurrency(b.bossNumber, balance) : [], notes, []);
+  const after = settle(state, breakdown, state.streak, breakdown.passed ? [...economy.bossCurrency(b.bossNumber, balance), ...mods.bossCurrency(state, content)] : [], notes, [], content);
   let rewardOffer: BossState['reward'] = null;
   let r = after.rng;
   if (breakdown.passed) {

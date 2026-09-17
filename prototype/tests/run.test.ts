@@ -318,8 +318,9 @@ describe('invariants', () => {
     let s = newRun(easy, 123);
     const check = (st: RunState) => {
       const ids = allTiles(st).map((t) => t.id);
-      expect(ids).toHaveLength(100);
-      expect(new Set(ids).size).toBe(100);
+      const expected = 100 + (st.inRun.includes('blank_slate') ? 2 : 0); // Blank Slate adds two tiles
+      expect(ids).toHaveLength(expected);
+      expect(new Set(ids).size).toBe(expected);
     };
     for (let guard = 0; guard < 30 && s.phase !== 'WIN' && s.phase !== 'GAME_OVER'; guard++) {
       s = s.round % 4 === 0 ? playBossRound(s, easy) : playRegularRound(s, easy);

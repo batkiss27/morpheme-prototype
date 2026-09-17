@@ -165,6 +165,9 @@ function bossAt(chainText: string, rules: Partial<BossRules> = {}): { boss: RunS
       endReason: null,
       rerolls: 0,
       reward: null,
+      lastDir: null,
+      lastWordCells: [],
+      scrambleTimerMs: 0,
     },
   };
 }
@@ -262,7 +265,7 @@ describe('feed', () => {
 describe('boss modifiers', () => {
   it('content validates and covers the spec §7 subset', () => {
     expect(() => B.validateBossModifiers(bossModifiers)).not.toThrow();
-    expect(bossModifiers.map((m) => m.id).sort()).toEqual(['fog', 'half_time', 'long_words_only', 'overload', 'rapid_feed', 'tight_rack', 'vowel_tax', 'y_not']);
+    expect(bossModifiers).toHaveLength(21); // the tab minus Decay
     const bad = { ...bossModifiers[0]!, id: 'x', hookId: 'nope' as BossModifierSpec['hookId'] };
     expect(() => B.validateBossModifiers([bad])).toThrow(/unknown hook/);
   });

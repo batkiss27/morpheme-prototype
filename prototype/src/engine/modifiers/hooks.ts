@@ -20,8 +20,8 @@ export interface Note {
 }
 
 export interface ModifierImpl {
-  /** Multiply one morpheme's tile-value sum. Return the new value and an optional note. */
-  morphemeValue?: (ctx: HookContext, info: MorphemeInfo, value: number) => number;
+  /** Adjust one morpheme's points (starts at its tile-value sum). Multiply or add. */
+  morphemeValue?: (ctx: HookContext, info: MorphemeInfo, points: number) => number;
   /** Adjust the morpheme-multiplier base (1.4 by default). */
   multiplierBase?: (ctx: HookContext, base: number) => number;
   /** Multiply the extension bonus for this round's shape. */
@@ -36,6 +36,26 @@ export interface ModifierImpl {
   bossRules?: (ctx: HookContext, rules: BossRules) => BossRules;
   /** Adjust how many modifiers are offered / picked after a boss. */
   reward?: (ctx: HookContext, r: { offers: number; picks: number }) => { offers: number; picks: number };
+  /** Flat points added after multiplication (regular rounds). */
+  flatBonus?: (ctx: HookContext) => number;
+  /** Multiply the whole round score (regular rounds). */
+  scoreMultiplier?: (ctx: HookContext) => number;
+  /** Extra hand tiles. */
+  handSize?: (ctx: HookContext, size: number) => number;
+  /** State changes when the modifier is acquired (reward pick or shop slot). */
+  onAcquire?: (ctx: HookContext) => Partial<RunState>;
+  /** Shop price multiplier. */
+  priceMult?: (ctx: HookContext, mult: number) => number;
+  /** Free rerolls per shop. */
+  freeRerolls?: (ctx: HookContext, n: number) => number;
+  /** Force the conditional in-run shop slot open. */
+  shopSlot?: (ctx: HookContext, open: boolean) => boolean;
+  /** Extra currency after a passed boss round. */
+  bossCurrency?: (ctx: HookContext) => CurrencySource | null;
+  /** Keep the natural streak despite extension-card use this round; may patch state. */
+  keepStreak?: (ctx: HookContext) => { keep: boolean; patch?: Partial<RunState> };
+  /** Ignore a failed threshold entirely (no life lost, shop still offered); may patch state. */
+  ignoreFail?: (ctx: HookContext) => { ignore: boolean; patch?: Partial<RunState> };
 }
 
 export type HookName = keyof ModifierImpl;

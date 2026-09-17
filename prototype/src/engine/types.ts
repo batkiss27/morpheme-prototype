@@ -166,7 +166,12 @@ export type ModifierCategory = 'scoring' | 'extension' | 'economy' | 'boss' | 'p
 /** Hook implementation ids in engine/modifiers/registry.ts. */
 export type HookId =
   | 'suffix_bias' | 'prefix_bias' | 'inflection' | 'coinage' | 'rack_extension' | 'vowel_harmony'
-  | 'momentum' | 'etymologist' | 'agglutination' | 'mirror' | 'chain_lightning' | 'polyglot';
+  | 'momentum' | 'etymologist' | 'agglutination' | 'mirror' | 'chain_lightning' | 'polyglot'
+  | 'consonant_cluster' | 'long_form' | 'bonus_draw' | 'blank_slate'
+  | 'reduplication_mod' | 'incorporation' | 'two_step' | 'streak_keeper' | 'discount' | 'boss_bounty' | 'feed_slow'
+  | 'second_chance' | 'free_reroll' | 'heavy_metal'
+  | 'sesquipedalian' | 'overflow' | 'affixer' | 'milestone_keeper' | 'double_time'
+  | 'polysynthesis' | 'palindrome' | 'immortal_word';
 
 export interface InRunModifierSpec {
   id: InRunModifierId;
@@ -307,6 +312,8 @@ export interface ShopState {
   /** Rerolls bought in this shop. */
   rerolls: number;
   rerollPrice: number;
+  /** Free rerolls left in this shop (Free Reroll modifier). */
+  freeRerolls: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -353,11 +360,34 @@ export interface BossRules {
   overflowDiscards: 'oldest' | 'newest';
   /** Starter word uses only its last morpheme regardless of boss number. */
   starterShrink: boolean;
+  /** Longest main word allowed (Short Words Only), or null. */
+  maxWordLength: number | null;
+  /** Gravity: first word across, the rest down. Alternate: each word opposite to the last. */
+  directionRule: 'none' | 'gravity' | 'alternate';
+  /** Silence: the UI hides the clock and plays no cues. */
+  silent: boolean;
+  /** Scramble: the rack reshuffles every N ms (0 = never). */
+  scrambleMs: number;
+  /** Dead Letter: fed tiles of this letter are lost. */
+  deadLetter: Letter | null;
+  /** Echo Rule: each word must share a cell with the previous word. */
+  mustCrossPrevious: boolean;
+  /** Frozen Multiplier: morphemes counted for boss scoring are reduced by this. */
+  morphemePenalty: number;
+  gridSize: number;
+  /** Mute Modifiers: feed tiles lose their tile modifiers. */
+  muteModifiers: boolean;
+  /** Toll: currency paid per word placed. */
+  tollPerWord: number;
+  /** Wild Drought: blanks are removed from the feed. */
+  noWilds: boolean;
 }
 
 /** Boss modifier ids implemented in engine/boss/modifiers.ts. */
 export type BossHookId =
-  | 'y_not' | 'long_words' | 'rapid_feed' | 'tight_rack' | 'fog' | 'half_time' | 'vowel_tax' | 'overload';
+  | 'y_not' | 'long_words' | 'rapid_feed' | 'tight_rack' | 'fog' | 'half_time' | 'vowel_tax' | 'overload'
+  | 'short_words' | 'gravity' | 'one_direction' | 'silence' | 'scramble' | 'dead_letter' | 'echo_rule'
+  | 'frozen_multiplier' | 'starter_shrink' | 'mirror_board' | 'mute_modifiers' | 'toll' | 'wild_drought';
 
 export interface BossModifierSpec {
   id: string;
@@ -400,6 +430,12 @@ export interface BossState {
   rerolls: number;
   /** Boss reward offer, set on a pass (BOSS_REWARD). */
   reward: { offers: InRunModifierId[]; picksLeft: number } | null;
+  /** Direction of the last word placed (direction rules). */
+  lastDir: Dir | null;
+  /** Cells of the last word placed (Echo Rule). */
+  lastWordCells: number[];
+  /** ms until the next rack scramble (Scramble). */
+  scrambleTimerMs: number;
 }
 
 /** One step of extension within a round, as recorded in the run state. */
@@ -472,7 +508,7 @@ export interface RunState {
   /** Counter for card instance ids. */
   cardSeq: number;
   inRun: InRunModifierId[];
-  /** Per-run numbers owned by modifiers (Momentum bonus, Etymologist cycle …). */
+  /** Per-run numbers owned by modifiers (Momentum bonus, Etymologist cycle, Immortal Word used …). */
   modifierState: Record<string, number>;
   /** Achievement ids earned this run (secret words in M5; the rest in M7). */
   achievements: string[];

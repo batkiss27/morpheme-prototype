@@ -6,13 +6,17 @@
 
 import * as rng from '../rng';
 import type { BossRules, BossState, RngState, Tile } from '../types';
+import { tileLetter } from '../tiles';
 import { bossCopy } from './board';
 
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
-/** A fresh shuffled cycle of copies of the chain tiles. */
-export function buildQueue(chainTiles: readonly Tile[], state: RngState, cycle: number): [Tile[], RngState] {
-  const [shuffled, next] = rng.shuffle(state, chainTiles.map((t) => bossCopy(t, cycle)));
+/** A fresh shuffled cycle of copies of the chain tiles (Wild Drought / Mute Modifiers applied). */
+export function buildQueue(chainTiles: readonly Tile[], state: RngState, cycle: number, rules?: Pick<BossRules, 'noWilds' | 'muteModifiers'>): [Tile[], RngState] {
+  let copies = chainTiles.map((t) => bossCopy(t, cycle));
+  if (rules?.noWilds) copies = copies.filter((t) => t.letter !== '_' && !t.modifiers.includes('wild'));
+  if (rules?.muteModifiers) copies = copies.map((t) => ({ ...t, modifiers: [] }));
+  const [shuffled, next] = rng.shuffle(state, copies);
   return [shuffled, next];
 }
 
@@ -41,11 +45,13 @@ export function feedOne(boss: Pick<BossState, 'rack' | 'queue' | 'cycle'>, chain
   if (queue.length === 0) {
     if (chainTiles.length === 0) return { rack: boss.rack.slice(), queue, cycle, rng: s }; // nothing can feed
     cycle += 1;
-    [queue, s] = buildQueue(chainTiles, s, cycle);
+    [queue, s] = buildQueue(chainTiles, s, cycle, rules);
     if (rules.vowelsToY) queue = applyVowelsToY(queue);
+    if (queue.length === 0) return { rack: boss.rack.slice(), queue, cycle, rng: s };
   }
   const incoming = queue.shift() as Tile;
   const rack = boss.rack.slice();
+  if (rules.deadLetter && tileLetter(incoming) === rules.deadLetter) return { rack, queue, cycle, rng: s }; // Dead Letter: lost
   if (rack.length >= rules.rackCap) {
     if (rules.overflowEnds) return { rack, queue: [incoming, ...queue], cycle, rng: s, overflow: 'ended' };
     if (rules.overflowDiscards === 'newest') return { rack, queue, cycle, rng: s, overflow: 'discarded' };
@@ -70,6 +76,15 @@ export function tick(boss: BossState, ms: number, chainTiles: readonly Tile[], s
   if (!rules) throw new Error('boss rules not resolved');
   let b: BossState = { ...boss, timeLeftMs: boss.timeLeftMs - ms, feedTimerMs: boss.feedTimerMs - ms };
   let s = state;
+  if (rules.scrambleMs > 0) {
+    let t = b.scrambleTimerMs - ms;
+    let rack = b.rack;
+    while (t <= 0) {
+      [rack, s] = rng.shuffle(s, rack);
+      t += rules.scrambleMs;
+    }
+    b = { ...b, rack, scrambleTimerMs: t };
+  }
   while (b.feedTimerMs <= 0) {
     const fed = feedOne(b, chainTiles, rules, s);
     s = fed.rng;

@@ -59,11 +59,18 @@ function formed(board: Board, run: { cells: [number, number][]; tiles: Tile[] },
   };
 }
 
+/** What direction / crossing rules need to know about earlier words. */
+export interface PlacementContext {
+  wordsPlaced: number;
+  lastDir: Dir | null;
+  lastWordCells: readonly number[];
+}
+
 /**
  * Validate a set of new tiles on the board. Returns the formed words and
  * points, or the first rule broken (with the offending word when relevant).
  */
-export function validatePlacement(board: Board, placed: readonly PlacedTile[], dict: Dictionary, rules: BossRules): Result<PlacementOutcome> {
+export function validatePlacement(board: Board, placed: readonly PlacedTile[], dict: Dictionary, rules: BossRules, context?: PlacementContext): Result<PlacementOutcome> {
   if (placed.length === 0) return { ok: false, error: 'place at least one tile' };
   const seen = new Set<number>();
   for (const p of placed) {
@@ -87,6 +94,10 @@ export function validatePlacement(board: Board, placed: readonly PlacedTile[], d
     const v = runThrough(board, at, first.row, first.col, 'V').tiles.length;
     dir = v > h ? 'V' : 'H';
   }
+  if (context && context.wordsPlaced > 0) {
+    if (rules.directionRule === 'gravity' && dir !== 'V') return { ok: false, error: 'Gravity: after the first word, words must go down' };
+    if (rules.directionRule === 'alternate' && context.lastDir && dir === context.lastDir) return { ok: false, error: `One Direction: the last word went ${context.lastDir === 'H' ? 'across' : 'down'}, so this one must go the other way` };
+  }
   const mainRun = runThrough(board, at, first.row, first.col, dir);
   const placedIdx = new Set(placed.map((p) => index(board, p.row, p.col)));
   const mainIdx = new Set(mainRun.cells.map(([r, c]) => index(board, r, c)));
@@ -107,6 +118,12 @@ export function validatePlacement(board: Board, placed: readonly PlacedTile[], d
   // A single tile whose only word is perpendicular: that word is the main word.
   const mainWord = main.word.length >= 2 ? main : (cross.shift() as FormedWord);
   if (mainWord.word.length < rules.minWordLength) return { ok: false, error: `words must be at least ${rules.minWordLength} letters`, word: mainWord.word };
+  if (rules.maxWordLength !== null && mainWord.word.length > rules.maxWordLength) return { ok: false, error: `words must be at most ${rules.maxWordLength} letters`, word: mainWord.word };
+  if (rules.mustCrossPrevious && context && context.wordsPlaced > 0) {
+    const prev = new Set(context.lastWordCells);
+    const touches = [mainWord, ...cross].some((w) => w.cells.some((c) => prev.has(c)));
+    if (!touches) return { ok: false, error: 'Echo Rule: the word must cross the previous word', word: mainWord.word };
+  }
   for (const w of [mainWord, ...cross]) {
     if (!dict.has(w.word)) return { ok: false, error: `"${w.word}" is not in the dictionary`, word: w.word };
   }

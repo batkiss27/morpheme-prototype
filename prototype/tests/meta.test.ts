@@ -1,7 +1,7 @@
 /** P7-01 … P7-07: meta-progression, loadouts, pre-run categories, challenges, Steep Curve, achievements. */
 import { describe, expect, it } from 'vitest';
 import { achievements, defaultBalance } from '../src/content';
-import { createRun, lastError, loadout as L, meta as M, reduce, scoring as S, thresholdFor } from '../src/engine';
+import { boss as B, createRun, lastError, loadout as L, meta as M, reduce, scoring as S, thresholdFor } from '../src/engine';
 import type { MetaState, PreRunLoadout, RunState } from '../src/engine';
 import { balanceWith, chainFromMorphemes, tilesFor, withCards } from './helpers';
 import { anyDict, makeContent, newRun, playBossRound, playFromHand, playRegularRound } from './run-driver';
@@ -55,7 +55,7 @@ describe('loadout → engine (P7-04, P7-05)', () => {
 
   it('Tempo and Tight Clock change the boss rules', () => {
     const base = { timerMs: 90_000, feedIntervalMs: 4000, rackCap: 7 };
-    const r = (loadout: PreRunLoadout) => L.bossRules(loadout, b, { ...base, startingRack: 3, minWordLength: 2, vowelsScoreZero: false, vowelsToY: false, hideQueue: false, overflowEnds: false, overflowDiscards: 'oldest', starterShrink: false });
+    const r = (loadout: PreRunLoadout) => L.bossRules(loadout, b, { ...B.baseRules(1, b), ...base });
     expect(r(lo({ categories: { tempo: 1 } }))).toMatchObject({ timerMs: 99_000, feedIntervalMs: 4000, rackCap: 7 });
     expect(r(lo({ categories: { tempo: 4 } }))).toMatchObject({ timerMs: 117_000, feedIntervalMs: 4800, rackCap: 8 });
     expect(r(lo({ challenges: ['tight_clock'] }))).toMatchObject({ timerMs: 63_000 });

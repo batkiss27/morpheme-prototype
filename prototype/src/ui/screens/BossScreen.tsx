@@ -4,6 +4,23 @@ import type { Dir, RunState } from '../../engine';
 import { Tile } from '../components';
 import { content, dispatch, getState, useStore } from '../store';
 
+/** One badge per active rule the player must respect right now. */
+function ruleHints(rules: NonNullable<NonNullable<RunState['boss']>['rules']>, lastDir: Dir | null): string[] {
+  const out: string[] = [];
+  if (rules.maxWordLength !== null) out.push(`words exactly ${rules.maxWordLength} letters`);
+  else if (rules.minWordLength > 2) out.push(`words ${rules.minWordLength}+ letters`);
+  if (rules.directionRule === 'gravity') out.push(lastDir ? 'down only' : 'first word any direction, then down only');
+  if (rules.directionRule === 'alternate') out.push(lastDir ? `next word must go ${lastDir === 'H' ? 'down' : 'across'}` : 'alternate directions');
+  if (rules.mustCrossPrevious) out.push('must cross the previous word');
+  if (rules.deadLetter) out.push(`dead letter ${rules.deadLetter}`);
+  if (rules.tollPerWord > 0) out.push(`toll ${rules.tollPerWord}¢ per word`);
+  if (rules.vowelsScoreZero) out.push('vowels score 0');
+  if (rules.vowelsToY) out.push('vowels play as Y');
+  if (rules.scrambleMs > 0) out.push(`rack scrambles every ${rules.scrambleMs / 1000}s`);
+  if (rules.silent) out.push('silence');
+  return out;
+}
+
 interface Cursor {
   row: number;
   col: number;
@@ -116,7 +133,7 @@ export function BossScreen({ run }: { run: RunState }) {
           <strong>{running.score.toLocaleString()}</strong> <span className="muted">/ {threshold.toLocaleString()}</span>{' '}
           {running.passed ? <span className="badge badge--pass">pass</span> : <span className="badge badge--fail">short</span>}
         </span>
-        <span className={`boss__clock ${seconds <= 10 ? 'boss__clock--low' : ''}`}>{seconds}s</span>
+        <span className={`boss__clock ${seconds <= 10 ? 'boss__clock--low' : ''}`}>{rules.silent ? '—' : `${seconds}s`}</span>
       </div>
       <div className="timer-bar">
         <div className="timer-bar__fill" style={{ width: `${timePct}%` }} />
@@ -157,6 +174,15 @@ export function BossScreen({ run }: { run: RunState }) {
           <p className="muted">
             Click a cell, type letters, <kbd>Space</kbd> flips direction, <kbd>Enter</kbd> places, <kbd>Esc</kbd> clears. Typing skips over tiles already on the board.
           </p>
+          {ruleHints(rules, b.lastDir).length > 0 && (
+            <p style={{ color: 'var(--warn)' }}>
+              {ruleHints(rules, b.lastDir).map((h) => (
+                <span key={h} className="badge badge--warn">
+                  {h}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
 
         <div className="boss__side">

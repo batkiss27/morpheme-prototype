@@ -5,7 +5,7 @@
  */
 
 import * as rng from '../rng';
-import type { Balance, BossHookId, BossModifierSpec, BossRules, RngState } from '../types';
+import type { Balance, BossHookId, BossModifierSpec, BossRules, Letter, RngState } from '../types';
 
 export type RuleHook = (rules: BossRules, params: BossModifierSpec['params']) => BossRules;
 
@@ -18,7 +18,28 @@ export const bossHooks: Record<BossHookId, RuleHook> = {
   half_time: (r, p) => ({ ...r, timerMs: Math.round(r.timerMs * Number(p.factor ?? 0.7)) }),
   vowel_tax: (r) => ({ ...r, vowelsScoreZero: true }),
   overload: (r) => ({ ...r, overflowEnds: true }),
+  short_words: (r, p) => ({ ...r, minWordLength: Number(p.length ?? 3), maxWordLength: Number(p.length ?? 3) }),
+  gravity: (r) => ({ ...r, directionRule: 'gravity' }),
+  one_direction: (r) => ({ ...r, directionRule: 'alternate' }),
+  silence: (r) => ({ ...r, silent: true }),
+  scramble: (r, p) => ({ ...r, scrambleMs: Number(p.everyMs ?? 10000) }),
+  dead_letter: (r) => ({ ...r, deadLetter: r.deadLetter ?? 'E' }), // the reducer rolls the actual letter
+  echo_rule: (r) => ({ ...r, mustCrossPrevious: true }),
+  frozen_multiplier: (r, p) => ({ ...r, morphemePenalty: Number(p.penalty ?? 1) }),
+  starter_shrink: (r) => ({ ...r, starterShrink: true }),
+  mirror_board: (r, p) => ({ ...r, gridSize: Math.max(5, Math.round(r.gridSize * Number(p.factor ?? 0.5))) }),
+  mute_modifiers: (r) => ({ ...r, muteModifiers: true }),
+  toll: (r, p) => ({ ...r, tollPerWord: Number(p.perWord ?? 1) }),
+  wild_drought: (r) => ({ ...r, noWilds: true }),
 };
+
+/** Dead Letter: pick the banned letter from the chain's letters (so it bites). */
+export function rollDeadLetter(chainLetters: readonly string[], state: RngState): [Letter, RngState] {
+  const pool = chainLetters.filter((l) => /^[A-Z]$/.test(l));
+  if (pool.length === 0) return ['E', state];
+  const [i, next] = rng.int(state, pool.length);
+  return [pool[i] as Letter, next];
+}
 
 export function validateBossModifiers(mods: readonly BossModifierSpec[]): void {
   const seen = new Set<string>();
@@ -44,6 +65,17 @@ export function baseRules(bossNumber: number, balance: Balance): BossRules {
     overflowEnds: false,
     overflowDiscards: 'oldest',
     starterShrink: false,
+    maxWordLength: null,
+    directionRule: 'none',
+    silent: false,
+    scrambleMs: 0,
+    deadLetter: null,
+    mustCrossPrevious: false,
+    morphemePenalty: 0,
+    gridSize: balance.boss.gridSize,
+    muteModifiers: false,
+    tollPerWord: 0,
+    noWilds: false,
   };
 }
 

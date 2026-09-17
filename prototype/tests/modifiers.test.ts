@@ -19,7 +19,7 @@ function withMods(words: string[], chainMorphemes: string[], hand: string, mods:
 describe('registry (P5-01)', () => {
   it('validates content and rejects unknown hooks / duplicates', () => {
     expect(() => M.validateInRunModifiers(inRunModifiers)).not.toThrow();
-    expect(inRunModifiers).toHaveLength(12);
+    expect(inRunModifiers).toHaveLength(34); // Lexicon Hint (UI) and Scavenger are not implemented
     const bad = { ...inRunModifiers[0]!, id: 'x', hookId: 'nope' as InRunModifierSpec['hookId'] };
     expect(() => M.validateInRunModifiers([bad])).toThrow(/unknown hook/);
     expect(() => M.validateInRunModifiers([inRunModifiers[0]!, inRunModifiers[0]!])).toThrow(/duplicate/);

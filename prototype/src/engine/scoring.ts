@@ -56,6 +56,11 @@ export interface MorphemeInfo {
   isHead: boolean;
   isTail: boolean;
   addedThisRound: boolean;
+  side: 'front' | 'back' | 'start' | 'insert';
+  /** Base values of the morpheme's tiles, in order. */
+  tileValues: number[];
+  /** Texts of every morpheme in the chain, for pattern hooks. */
+  allTexts: string[];
 }
 
 export interface MorphemePoints {
@@ -69,7 +74,7 @@ export interface MorphemePoints {
  * Word points with a per-morpheme multiplier (in-run modifiers). With the
  * identity multiplier this equals `wordPoints(chain)`.
  */
-export function wordPointsBy(chain: Chain, round: number, mult: (info: MorphemeInfo) => number): { total: number; perMorpheme: MorphemePoints[] } {
+export function wordPointsBy(chain: Chain, round: number, value: (info: MorphemeInfo, base: number) => number): { total: number; perMorpheme: MorphemePoints[] } {
   const byId = new Map(chain.tiles.map((t) => [t.id, t]));
   const texts = chain.morphemes.map((m) => m.tileIds.map((id) => tileLetter(byId.get(id)!)).join('').toLowerCase());
   const perMorpheme = chain.morphemes.map((m, i) => {
@@ -82,9 +87,12 @@ export function wordPointsBy(chain: Chain, round: number, mult: (info: MorphemeI
       isHead: i === 0,
       isTail: i === chain.morphemes.length - 1,
       addedThisRound: m.round === round,
+      side: m.side,
+      tileValues: m.tileIds.map((id) => tileValue(byId.get(id)!)),
+      allTexts: texts,
     };
-    const k = mult(info);
-    return { text: info.text, base, mult: k, points: base * k };
+    const points = value(info, base);
+    return { text: info.text, base, mult: base > 0 ? points / base : 1, points };
   });
   return { total: perMorpheme.reduce((s, p) => s + p.points, 0), perMorpheme };
 }
