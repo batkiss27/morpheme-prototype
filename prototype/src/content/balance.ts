@@ -146,7 +146,7 @@ export const defaultBalance: Balance = {
   scoring: {
     multiplierBase: 1.4,
     round1Threshold: 4,
-    thresholdGrowthByBlock: [1.25, 1.5, 1.75, 2, 2.25, 2.5],
+    thresholdGrowthByBlock: [1.5, 1.5, 1.75, 2, 2.25, 2.5],
     growthBlockSize: 4,
     bossThresholdFactor: 3,
     strain: 1,

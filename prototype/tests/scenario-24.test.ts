@@ -45,10 +45,10 @@ describe('scenario 24 (Scoring tab)', () => {
     });
   }
 
-  it('records the workbook verdict: the no-modifier scenario passes 14 rounds and fails at round 15', () => {
+  it('records the workbook verdict: the no-modifier scenario passes 11 rounds and fails at B3', () => {
     expect(scenario.rounds).toHaveLength(24);
-    expect(scenario.rounds.filter((r) => r.expected.pass)).toHaveLength(14);
-    expect(scenario.rounds.find((r) => !r.expected.pass)?.round).toBe(15);
+    expect(scenario.rounds.filter((r) => r.expected.pass)).toHaveLength(11);
+    expect(scenario.rounds.find((r) => !r.expected.pass)?.round).toBe(12);
   });
 });
 

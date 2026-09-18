@@ -277,7 +277,7 @@ describe('boss rounds (stubbed)', () => {
     expect(s.phase).toBe('BOSS_END');
     expect(s.lastResult?.kind).toBe('boss');
     expect(s.lastResult?.passed).toBe(true);
-    expect(s.lastResult?.threshold).toBe(6); // 1 × 1.25^3 × 3 = 5.86
+    expect(s.lastResult?.threshold).toBe(10); // 1 × 1.5^3 × 3 = 10.125
     expect(s.currency).toBe(currencyBefore + easy.balance.economy.bossClear[0]!);
     s = reduce(s, { type: 'CONTINUE' }, easy);
     expect(s.phase).toBe('BOSS_REWARD');

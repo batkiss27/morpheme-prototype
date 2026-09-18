@@ -262,10 +262,10 @@ boss round score    = Σ over words placed: (sum of tile values)
   24-round scenario.
 - **Strain** lowers the effective morpheme count by 1 for that round.
 - Thresholds grow per round by a factor that rises in blocks of four rounds —
-  ×1.25 for rounds 1–4, ×1.5 for 5–8, ×1.75 for 9–12, ×2 for 13–16, ×2.25 for
-  17–20, ×2.5 for 21–24 — with a ×3 bump on Boss Rounds; see the *Scoring* tab.
+  ×1.5 for rounds 1–8, ×1.75 for 9–12, ×2 for 13–16, ×2.25 for 17–20, ×2.5 for
+  21–24 — with a ×3 bump on Boss Rounds; see the *Scoring* tab.
   **Tuning intent:** an unmodified run (no loadout, no cards) should almost
-  always reach the first Boss Round (4 / 5 / 6 / 23 for rounds 1–4); from B2
+  always reach the first Boss Round (4 / 6 / 9 / 41 for rounds 1–4); from B2
   on, multi-step rounds, streaks and in-run modifiers are expected to carry the
   score. The opt-in **Steep Curve** risk modifier (§6.4) scales all of it.
 

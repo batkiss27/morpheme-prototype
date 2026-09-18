@@ -27,3 +27,8 @@ logged in the workbook's Decisions tab.
 
 Hand size 8. Bot: 0/10 wins, but runs now reach rounds 11–16 (7 of 10 beat B3;
 all die at B4 = 17.8k or earlier). Ratios at the fatal round 0.10–0.67.
+
+## 2026-09-18 — growth 1.5 / 1.5 / 1.75 / 2 / 2.25 / 2.5 (`2026-09-18-curve4.md`)
+
+Bot: 0/10 wins; runs reach rounds 11–16 (5 of 10 beat B3 at 1.9k; none beat B4
+at 30.8k). Fatal-round ratios 0.18–0.98.
