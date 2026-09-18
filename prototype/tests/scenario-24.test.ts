@@ -45,9 +45,10 @@ describe('scenario 24 (Scoring tab)', () => {
     });
   }
 
-  it('passes all 24 rounds, as the workbook reports', () => {
-    expect(scenario.rounds.every((r) => r.expected.pass)).toBe(true);
+  it('records the workbook verdict: the no-modifier scenario passes 7 rounds and fails at B2', () => {
     expect(scenario.rounds).toHaveLength(24);
+    expect(scenario.rounds.filter((r) => r.expected.pass)).toHaveLength(7);
+    expect(scenario.rounds.find((r) => !r.expected.pass)?.round).toBe(8);
   });
 });
 
@@ -72,7 +73,6 @@ describe('scenario 24 with Agglutination picked after B1 (P5-03)', () => {
       expect(r.morphemeMult).toBeCloseTo(Math.pow(base, effM - 1), 9);
       expect(r.score).toBe(S.roundHalfUp(points * Math.pow(base, effM - 1) * inRunMult));
       expect(r.score).toBeGreaterThan(row.expected.score);
-      expect(r.passed).toBe(true);
     });
   }
 });

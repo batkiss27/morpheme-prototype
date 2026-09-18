@@ -4,7 +4,7 @@ import { exportRun, exportRunJson, parseRunExport, reduce, replay } from '../src
 import { balanceWith } from './helpers';
 import { anyDict, makeContent, newRun, playBossRound, playRegularRound } from './run-driver';
 
-const content = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowth: 1 } }));
+const content = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowthByBlock: [1] } }));
 
 function sampleRun() {
   let s = newRun(content, 2024);

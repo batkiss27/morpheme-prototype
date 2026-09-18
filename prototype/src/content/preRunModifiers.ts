@@ -13,7 +13,7 @@ export const preRunCategories: PreRunCategorySpec[] = [
     name: 'Treasury',
     levels: ['+1 currency per round cleared', 'Natural streak bonus doubled', '10% shop discount', 'Natural word dividend doubled'],
   },
-  { id: 'substrate', name: 'Substrate', levels: ['Hand size +1', 'Hand size +2', 'Hand +2, 1 free redraw per round', 'Hand +3, 1 free redraw per round'] },
+  { id: 'substrate', name: 'Substrate', levels: ['1 free redraw per round', 'Hand size +1', 'Hand +1, 1 free redraw per round', 'Hand +2, 1 free redraw per round'] },
   { id: 'tempo', name: 'Tempo', levels: ['Boss timer +10%', 'Boss timer +20%', 'Boss timer +20%, feed 10% slower', 'Boss timer +30%, feed 20% slower, rack +1'] },
 ];
 

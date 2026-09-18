@@ -75,7 +75,7 @@ describe('a passed round lists every source', () => {
   });
 
   it('the streak bonus is capped', () => {
-    const flat = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowth: 1 } }));
+    const flat = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowthByBlock: [1] } }));
     let s = reduce(newRun(flat), { type: 'START_ROUND' }, flat);
     s = { ...s, round: 9, streak: 8 };
     s = playFromHand(s, flat, 2, 'start');

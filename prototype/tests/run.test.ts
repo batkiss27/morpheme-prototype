@@ -181,17 +181,34 @@ describe('failing a threshold', () => {
     expect(lastError(reduce(s, { type: 'START_ROUND' }, hard))).toBeTruthy();
   });
 
-  it('with a life → life lost, no shop, next round', () => {
+  it('with a life → life lost, no shop, the same round is replayed with the word as it was', () => {
     let s = start(newRun(hard, 1, { tileModifiers: [], categories: { second_breath: 1 } }));
     s = playFromHand(s, hard, 2, 'start');
     s = reduce(s, { type: 'SUBMIT' }, hard);
     expect(s.lastResult?.outcome).toBe('life_lost');
     expect(s.lives).toBe(0);
     expect(s.streak).toBe(0);
+    expect(s.chain).toBeNull(); // the failed extension is undone
+    expect(s.pool).toHaveLength(100);
     s = reduce(s, { type: 'CONTINUE' }, hard);
     expect(s.phase).toBe('ROUND_START');
-    expect(s.round).toBe(2);
-    expect(s.chain?.tiles).toHaveLength(2); // the word still grew
+    expect(s.round).toBe(1);
+    s = reduce(s, { type: 'START_ROUND' }, hard);
+    expect(s.hand).toHaveLength(defaultBalance.hand.size); // a fresh hand
+  });
+
+  it('a failed extension with a life reverts to the round-start chain and returns cards used', () => {
+    const easy2 = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1 } }));
+    let s = playRegularRound(newRun(easy2, 3, { tileModifiers: [], categories: { second_breath: 1 } }), easy2, 3);
+    const chainBefore = s.chain;
+    s = { ...s, balanceOverride: balanceWith({ scoring: { round1Threshold: 1_000_000 } }) };
+    s = start(s);
+    s = playFromHand(s, easy2, 2, 'back');
+    s = reduce(s, { type: 'SUBMIT' }, easy2);
+    expect(s.lastResult?.outcome).toBe('life_lost');
+    expect(s.chain).toEqual(chainBefore);
+    expect(allTiles(s)).toHaveLength(100);
+    expect(reduce(s, { type: 'CONTINUE' }, easy2).round).toBe(2);
   });
 });
 
@@ -216,15 +233,18 @@ describe('FORFEIT', () => {
     expect(s.phase).toBe('GAME_OVER');
   });
 
-  it('with a life: loses it and moves on', () => {
+  it('with a life: loses it and replays the same round with a fresh hand', () => {
     const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1 } }));
     let s = start(newRun(easy, 1, { tileModifiers: [], categories: { second_breath: 1 } }));
+    const hand = s.hand.map((t) => t.id);
     s = reduce(s, { type: 'FORFEIT' }, easy);
     expect(s.lastResult?.outcome).toBe('life_lost');
     expect(s.chain).toBeNull();
     s = reduce(s, { type: 'CONTINUE' }, easy);
     expect(s.phase).toBe('ROUND_START');
-    expect(s.round).toBe(2);
+    expect(s.round).toBe(1);
+    s = reduce(s, { type: 'START_ROUND' }, easy);
+    expect(s.hand.map((t) => t.id)).not.toEqual(hand);
   });
 
   it('is only allowed in EXTEND', () => {
@@ -314,7 +334,7 @@ describe('WIN', () => {
 
 describe('invariants', () => {
   it('tiles are conserved across a whole 24-round run', () => {
-    const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowth: 1 } }));
+    const easy = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowthByBlock: [1] } }));
     let s = newRun(easy, 123);
     const check = (st: RunState) => {
       const ids = allTiles(st).map((t) => t.id);

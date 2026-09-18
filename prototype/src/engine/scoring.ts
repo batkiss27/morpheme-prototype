@@ -4,7 +4,7 @@
  *   regular score = round( wordPoints × morphemeMult × extensionBonus × inRunMult ) + flat
  *   boss score    = round( bossWordPoints × morphemeMult × inRunMult )
  *   morphemeMult  = base ^ (effectiveMorphemes − 1)
- *   threshold     = round( T1 × growth ^ (round − 1) × (boss ? bossFactor : 1) )
+ *   threshold     = round( T1 × Π growth(block) × (boss ? bossFactor : 1) × loadoutScale )
  *
  * Every function takes `balance` as an argument; nothing here imports content.
  */
@@ -30,11 +30,24 @@ export function bossesBefore(round: number, balance: Balance): number {
   return Math.floor((round - 1) / balance.rounds.bossEvery);
 }
 
+/** Growth factor applied going *into* `round` (rounds 1–4 use block 0, 5–8 block 1 …). */
+export function growthFor(round: number, balance: Balance): number {
+  const g = balance.scoring.thresholdGrowthByBlock;
+  const block = Math.floor((round - 1) / balance.scoring.growthBlockSize);
+  return g[Math.min(block, g.length - 1)] ?? 1;
+}
+
+/** Unrounded regular-round threshold before the boss factor and loadout scale. */
+export function baseThreshold(round: number, balance: Balance): number {
+  let t = balance.scoring.round1Threshold;
+  for (let k = 2; k <= round; k++) t *= growthFor(k, balance);
+  return t;
+}
+
 /** `scale` is the loadout's threshold multiplier (Steep Curve), 1 by default. */
 export function threshold(round: number, balance: Balance, scale = 1): number {
-  const s = balance.scoring;
-  const boss = isBossRound(round, balance) ? s.bossThresholdFactor : 1;
-  return roundHalfUp(s.round1Threshold * Math.pow(s.thresholdGrowth, round - 1) * boss * scale);
+  const boss = isBossRound(round, balance) ? balance.scoring.bossThresholdFactor : 1;
+  return roundHalfUp(baseThreshold(round, balance) * boss * scale);
 }
 
 // ---------------------------------------------------------------------------

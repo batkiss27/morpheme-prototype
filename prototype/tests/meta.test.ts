@@ -16,11 +16,15 @@ describe('loadout → engine (P7-04, P7-05)', () => {
     expect(createRun(1, lo({ categories: { second_breath: 3 }, challenges: ['no_breath'] }), c).lives).toBe(0);
   });
 
-  it('Substrate raises the hand size and grants a free redraw from level 3', () => {
-    expect(L.handSize(lo({ categories: { substrate: 1 } }), b)).toBe(11);
-    expect(L.handSize(lo({ categories: { substrate: 4 } }), b)).toBe(13);
+  it('Substrate: L1 free redraw, L2 hand +1, L3 hand +1 & redraw, L4 hand +2 & redraw', () => {
+    expect(L.handSize(lo({ categories: { substrate: 1 } }), b)).toBe(10);
+    expect(L.freeRedraws(lo({ categories: { substrate: 1 } }), b)).toBe(1);
+    expect(L.handSize(lo({ categories: { substrate: 2 } }), b)).toBe(11);
+    expect(L.freeRedraws(lo({ categories: { substrate: 2 } }), b)).toBe(0);
+    expect(L.handSize(lo({ categories: { substrate: 4 } }), b)).toBe(12);
+    expect(L.freeRedraws(lo({ categories: { substrate: 4 } }), b)).toBe(1);
     let s = reduce(createRun(1, lo({ categories: { substrate: 3 } }), c), { type: 'START_ROUND' }, c);
-    expect(s.hand).toHaveLength(12);
+    expect(s.hand).toHaveLength(11);
     expect(s.freeRedraws).toBe(1);
     const before = s.hand.map((t) => t.id);
     s = reduce(s, { type: 'REDRAW' }, c);
@@ -248,7 +252,7 @@ describe('achievements & awards (P7-02)', () => {
 });
 
 describe('loadout budget grows per boss beaten', () => {
-  const cc = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowth: 1 } }));
+  const cc = makeContent(anyDict, balanceWith({ scoring: { round1Threshold: 1, thresholdGrowthByBlock: [1] } }));
 
   /** A finished run with `bosses` bosses beaten (0–5) and then a loss. */
   function runWithBosses(bosses: number, seed = 1): RunState {

@@ -123,9 +123,11 @@ export function ScoreScreen({ run }: { run: RunState }) {
         {run.flags.bossJumpPending && <p style={{ color: 'var(--warn)' }}>Secret word! The next round jumps straight to the boss.</p>}
 
         {r.outcome === 'life_lost' && (
-          <p style={{ color: 'var(--warn)' }}>A life absorbed the miss. No shop this round; the word keeps its extension.</p>
+          <p style={{ color: 'var(--warn)' }}>
+            A life absorbed the miss. {boss ? 'The boss is replayed with a new modifier.' : 'This round is replayed with a fresh hand; the word is as it was before the round.'} No shop.
+          </p>
         )}
-        {r.outcome === 'insured' && <p style={{ color: 'var(--warn)' }}>Insurance paid out: no life lost. No shop this round.</p>}
+        {r.outcome === 'insured' && <p style={{ color: 'var(--warn)' }}>Insurance paid out: no life lost. The round is replayed with a fresh hand; no shop.</p>}
         {r.outcome === 'game_over' && <p style={{ color: 'var(--danger)' }}>No lives left. The run is over.</p>}
       </div>
 
@@ -135,7 +137,7 @@ export function ScoreScreen({ run }: { run: RunState }) {
       </div>
 
       <button type="button" className="btn--primary" onClick={() => dispatch({ type: 'CONTINUE' })}>
-        {r.outcome === 'pass' ? (boss ? 'Choose reward' : 'To the shop') : r.outcome === 'game_over' ? 'End run' : 'Next round'}
+        {r.outcome === 'pass' ? (boss ? 'Choose reward' : 'To the shop') : r.outcome === 'game_over' ? 'End run' : boss ? 'Retry the boss' : 'Replay the round'}
       </button>
     </div>
   );

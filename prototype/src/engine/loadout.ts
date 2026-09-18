@@ -30,7 +30,8 @@ export function handSize(loadout: PreRunLoadout, balance: Balance): number {
 }
 
 export function freeRedraws(loadout: PreRunLoadout, balance: Balance): number {
-  return level(loadout, 'substrate') >= balance.preRun.substrate.freeRedrawFromLevel ? 1 : 0;
+  const l = level(loadout, 'substrate');
+  return l > 0 ? (balance.preRun.substrate.freeRedraws[l - 1] ?? 0) : 0;
 }
 
 /** Threshold multiplier from Steep Curve. */

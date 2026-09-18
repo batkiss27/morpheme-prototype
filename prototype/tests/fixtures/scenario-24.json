@@ -1,10 +1,17 @@
 {
   "name": "Scoring tab \u2014 24-round scenario (form \u2192 formal \u2192 informal \u2026)",
-  "source": "Morpheme_Master.xlsx / Scoring, rows 16\u201339, parameters C5:C12",
+  "source": "Morpheme_Master.xlsx / Scoring, rows 16\u201339, parameters C5:C12 and growth table G6:G11",
   "parameters": {
     "multiplierBase": 1.4,
     "round1Threshold": 4,
-    "thresholdGrowth": 1.5,
+    "thresholdGrowthByBlock": [
+      1.5,
+      2,
+      2.5,
+      3,
+      3.5,
+      5
+    ],
     "bossThresholdFactor": 3,
     "strain": 1,
     "bonusTwoSameSide": 1.5,
@@ -113,7 +120,7 @@
         "extensionBonus": 1,
         "inRunMult": 1.2,
         "score": 59,
-        "threshold": 20,
+        "threshold": 27,
         "pass": true
       }
     },
@@ -134,7 +141,7 @@
         "extensionBonus": 1,
         "inRunMult": 1.2,
         "score": 76,
-        "threshold": 30,
+        "threshold": 54,
         "pass": true
       }
     },
@@ -155,7 +162,7 @@
         "extensionBonus": 1,
         "inRunMult": 1.2,
         "score": 161,
-        "threshold": 46,
+        "threshold": 108,
         "pass": true
       }
     },
@@ -176,8 +183,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.2,
         "score": 336,
-        "threshold": 205,
-        "pass": true
+        "threshold": 648,
+        "pass": false
       }
     },
     {
@@ -197,8 +204,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.4,
         "score": 316,
-        "threshold": 103,
-        "pass": true
+        "threshold": 540,
+        "pass": false
       }
     },
     {
@@ -218,8 +225,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.4,
         "score": 422,
-        "threshold": 154,
-        "pass": true
+        "threshold": 1350,
+        "pass": false
       }
     },
     {
@@ -239,8 +246,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.4,
         "score": 950,
-        "threshold": 231,
-        "pass": true
+        "threshold": 3375,
+        "pass": false
       }
     },
     {
@@ -260,8 +267,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.4,
         "score": 1818,
-        "threshold": 1038,
-        "pass": true
+        "threshold": 25313,
+        "pass": false
       }
     },
     {
@@ -281,8 +288,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.6,
         "score": 1251,
-        "threshold": 519,
-        "pass": true
+        "threshold": 25313,
+        "pass": false
       }
     },
     {
@@ -302,8 +309,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.6,
         "score": 2499,
-        "threshold": 778,
-        "pass": true
+        "threshold": 75938,
+        "pass": false
       }
     },
     {
@@ -323,8 +330,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.6,
         "score": 2684,
-        "threshold": 1168,
-        "pass": true
+        "threshold": 227813,
+        "pass": false
       }
     },
     {
@@ -344,8 +351,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.6,
         "score": 7127,
-        "threshold": 5255,
-        "pass": true
+        "threshold": 2050313,
+        "pass": false
       }
     },
     {
@@ -365,8 +372,8 @@
         "extensionBonus": 1.5,
         "inRunMult": 1.8,
         "score": 13072,
-        "threshold": 2627,
-        "pass": true
+        "threshold": 2392031,
+        "pass": false
       }
     },
     {
@@ -386,8 +393,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.8,
         "score": 9001,
-        "threshold": 3941,
-        "pass": true
+        "threshold": 8372109,
+        "pass": false
       }
     },
     {
@@ -407,8 +414,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.8,
         "score": 19042,
-        "threshold": 5912,
-        "pass": true
+        "threshold": 29302383,
+        "pass": false
       }
     },
     {
@@ -428,8 +435,8 @@
         "extensionBonus": 1,
         "inRunMult": 1.8,
         "score": 37803,
-        "threshold": 26602,
-        "pass": true
+        "threshold": 307675020,
+        "pass": false
       }
     },
     {
@@ -449,8 +456,8 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 25513,
-        "threshold": 13301,
-        "pass": true
+        "threshold": 512791699,
+        "pass": false
       }
     },
     {
@@ -470,8 +477,8 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 50616,
-        "threshold": 19952,
-        "pass": true
+        "threshold": 2563958496,
+        "pass": false
       }
     },
     {
@@ -491,8 +498,8 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 51835,
-        "threshold": 29927,
-        "pass": true
+        "threshold": 12819792480,
+        "pass": false
       }
     },
     {
@@ -512,8 +519,8 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 145139,
-        "threshold": 134673,
-        "pass": true
+        "threshold": 192296887207,
+        "pass": false
       }
     }
   ]

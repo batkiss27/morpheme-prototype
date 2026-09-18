@@ -35,8 +35,12 @@ export interface Balance {
     /** morpheme multiplier = base ^ (effective morphemes − 1) */
     multiplierBase: number;
     round1Threshold: number;
-    /** threshold = T1 × growth ^ (round − 1) */
-    thresholdGrowth: number;
+    /**
+     * Per-round growth factor by block of `growthBlockSize` rounds:
+     * threshold(r) = T1 × Π_{k=2..r} growth[block(k)]. Index 0 = rounds 1–4.
+     */
+    thresholdGrowthByBlock: number[];
+    growthBlockSize: number;
     bossThresholdFactor: number;
     /** Effective morphemes subtracted per extension card used this round. */
     strain: number;
@@ -94,8 +98,8 @@ export interface Balance {
     steepCurve: { thresholdScale: number[]; loadoutPoints: number[] };
     /** Treasury (Pre-Run Modifiers tab), cumulative by level. */
     treasury: { roundClearBonus: number; streakMult: number; shopDiscount: number; dividendMult: number };
-    /** Substrate: hand size per level and the level from which a free redraw is granted. */
-    substrate: { handBonus: number[]; freeRedrawFromLevel: number };
+    /** Substrate per level (index = level − 1): extra hand tiles and free redraws per round. */
+    substrate: { handBonus: number[]; freeRedraws: number[] };
     /** Tempo: boss timer / feed multipliers per level, rack bonus at L4. */
     tempo: { timerMult: number[]; feedMult: number[]; rackBonus: number[] };
     /** Challenge modifier numbers. */
@@ -142,7 +146,8 @@ export const defaultBalance: Balance = {
   scoring: {
     multiplierBase: 1.4,
     round1Threshold: 4,
-    thresholdGrowth: 1.5,
+    thresholdGrowthByBlock: [1.5, 2, 2.5, 3, 3.5, 5],
+    growthBlockSize: 4,
     bossThresholdFactor: 3,
     strain: 1,
     bonusTwoSameSide: 1.5,
@@ -191,7 +196,7 @@ export const defaultBalance: Balance = {
   preRun: {
     steepCurve: { thresholdScale: [1.15, 1.3, 1.5, 1.75], loadoutPoints: [1, 2, 3, 4] },
     treasury: { roundClearBonus: 1, streakMult: 2, shopDiscount: 0.1, dividendMult: 2 },
-    substrate: { handBonus: [1, 2, 2, 3], freeRedrawFromLevel: 3 },
+    substrate: { handBonus: [0, 1, 1, 2], freeRedraws: [1, 0, 1, 1] },
     tempo: { timerMult: [1.1, 1.2, 1.2, 1.3], feedMult: [1, 1, 1.1, 1.2], rackBonus: [0, 0, 0, 1] },
     challenges: { tightClockTimerMult: 0.7, inflationPriceMult: 1.5 },
   },

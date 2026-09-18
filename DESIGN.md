@@ -1,6 +1,6 @@
 # Morpheme — Game Design Document
 
-> **Status:** Early brainstorm, revision 5 (rev 5: loadout budget grows per boss beaten; rev 4: hand size 10, round-1 threshold 4, Steep Curve). This document is the narrative design;
+> **Status:** Early brainstorm, revision 6 (rev 6: threshold growth by block, Substrate reordered, lives replay the round; rev 5: loadout budget grows per boss beaten; rev 4: hand size 10, round-1 threshold 4, Steep Curve). This document is the narrative design;
 > the companion workbook **`Morpheme_Master.xlsx`** is the master list of values
 > (tiles, cards, modifiers, economy, scoring scenarios, achievements). When the two
 > disagree, the spreadsheet wins for values and this document wins for rules.
@@ -72,7 +72,8 @@ R1  R2  R3  [B1]  R5  R6  R7  [B2]  R9  R10 R11 [B3]  R13 R14 R15 [B4]  R17 R18 
 - **Boss Round:** timed Scrabble-style round using the word's letters, beat a higher
   threshold, choose an in-run modifier as the reward.
 - Thresholds rise every round. Failing one costs a life (if the loadout has any)
-  or ends the run. Beating B6 wins the run.
+  and the round is **replayed** — a fresh hand for a regular round, a new
+  modifier for a boss — or, with no lives, ends the run. Beating B6 wins the run.
 
 ### 2.2 Core loop
 
@@ -260,11 +261,13 @@ boss round score    = Σ over words placed: (sum of tile values)
   tab has the base and threshold growth as editable parameters and a full
   24-round scenario.
 - **Strain** lowers the effective morpheme count by 1 for that round.
-- Thresholds follow a geometric curve with a boss bump; see the *Scoring* tab.
+- Thresholds grow per round by a factor that rises in blocks of four rounds —
+  ×1.5 for rounds 1–4, ×2 for 5–8, ×2.5 for 9–12, ×3 for 13–16, ×3.5 for
+  17–20, ×5 for 21–24 — with a ×3 bump on Boss Rounds; see the *Scoring* tab.
   **Tuning intent:** an unmodified run (no loadout, no cards) should almost
-  always reach the first Boss Round; the round-1 threshold starts at 4
-  (4 / 6 / 9 / 20 for rounds 1–4). Difficulty for experienced players comes
-  from the opt-in **Steep Curve** risk modifier (§6.4), not the base curve.
+  always reach the first Boss Round (4 / 6 / 9 / 41 for rounds 1–4); from B2
+  on, multi-step rounds, streaks and in-run modifiers are expected to carry the
+  score. The opt-in **Steep Curve** risk modifier (§6.4) scales all of it.
 
 ### 2.8 Shops
 

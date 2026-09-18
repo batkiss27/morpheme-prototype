@@ -9,7 +9,7 @@ describe('balance', () => {
     const p = scenario.parameters;
     expect(defaultBalance.scoring.multiplierBase).toBe(p.multiplierBase);
     expect(defaultBalance.scoring.round1Threshold).toBe(p.round1Threshold);
-    expect(defaultBalance.scoring.thresholdGrowth).toBe(p.thresholdGrowth);
+    expect(defaultBalance.scoring.thresholdGrowthByBlock).toEqual(p.thresholdGrowthByBlock);
     expect(defaultBalance.scoring.bossThresholdFactor).toBe(p.bossThresholdFactor);
     expect(defaultBalance.scoring.strain).toBe(p.strain);
     expect(defaultBalance.scoring.bonusTwoSameSide).toBe(p.bonusTwoSameSide);

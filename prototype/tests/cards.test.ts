@@ -333,7 +333,7 @@ describe('utility cards', () => {
     expect(s.lives).toBe(0);
     s = reduce(s, { type: 'CONTINUE' }, hard);
     expect(s.phase).toBe('ROUND_START');
-    expect(s.round).toBe(2);
+    expect(s.round).toBe(1); // Insurance also replays the round
   });
 
   it('Lexicographer sets its round flag', () => {

@@ -19,12 +19,14 @@ const seeds = arg('seeds', '1,2,3,4,5').split(',').map(Number);
 const outDir = arg('out', join(__dirname, '..', '..', 'playtests'));
 const label = arg('label', 'baseline');
 const think = Number(arg('think', '4000'));
+const growthArg = arg('growth', '');
+const balance = growthArg ? { ...defaultBalance, scoring: { ...defaultBalance.scoring, thresholdGrowthByBlock: growthArg.split(',').map(Number) } } : defaultBalance;
 
 const base = readFileSync(join(__dirname, '..', 'public', 'dict', 'enable1.txt'), 'utf8');
 const custom = readFileSync(join(__dirname, '..', 'public', 'dict', 'custom.txt'), 'utf8');
 const words = dictFns.wordsFromText(base + '\n' + custom).map((w) => w.trim().toLowerCase()).filter((w) => w.length >= 2 && !w.startsWith('#'));
 const content: EngineContent = {
-  balance: defaultBalance,
+  balance,
   dictionary: dictFns.createDictionary(words),
   letters,
   cards,
@@ -39,13 +41,13 @@ const opts = { ...defaultBotOptions, bossThinkMs: think, words, shortWords: shor
 
 mkdirSync(outDir, { recursive: true });
 const date = new Date().toISOString().slice(0, 10);
-const lines: string[] = [`# Playtest — ${label} (${date})`, '', `Bot: greedy natural extensions (≤ ${opts.maxSteps} steps), extension cards when stuck, ${opts.bossThinkMs / 1000}s per boss placement. No loadout. Balance: T1 ${defaultBalance.scoring.round1Threshold}, growth ${defaultBalance.scoring.thresholdGrowth}, base ${defaultBalance.scoring.multiplierBase}, hand ${defaultBalance.hand.size}.`, ''];
+const lines: string[] = [`# Playtest — ${label} (${date})`, '', `Bot: greedy natural extensions (≤ ${opts.maxSteps} steps), extension cards when stuck, ${opts.bossThinkMs / 1000}s per boss placement. No loadout. Balance: T1 ${defaultBalance.scoring.round1Threshold}, growth ${balance.scoring.thresholdGrowthByBlock.join('/')} per block of ${balance.scoring.growthBlockSize}, base ${defaultBalance.scoring.multiplierBase}, hand ${defaultBalance.hand.size}.`, ''];
 const summary: string[] = ['| Seed | Outcome | Reached | Rounds cleared | Bosses | Min ratio (round) | Final word | Modifiers |', '|---|---|---|---|---|---|---|---|'];
 
 for (const seed of seeds) {
   const t0 = Date.now();
   const final = playRun(createRun(seed, defaultLoadout, content), content, opts);
-  const { history } = replayWithHistory(exportRun(final, defaultBalance), content);
+  const { history } = replayWithHistory(exportRun(final, balance), content);
   const worst = history.reduce((w, h) => (ratio(h.score, h.threshold) < ratio(w.score, w.threshold) ? h : w), history[0]!);
   const chain = final.chain ? final.chain.tiles.map((t) => t.playedAs ?? t.letter).join('').toLowerCase() : '';
   summary.push(
@@ -57,7 +59,7 @@ for (const seed of seeds) {
     lines.push(`| ${h.round}${h.kind === 'boss' ? ' B' : ''} | ${h.kind === 'boss' ? '—' : h.chain} | ${h.morphemes} | ${h.score} | ${h.threshold} | ${h.margin >= 0 ? '+' : ''}${h.margin} | ${ratio(h.score, h.threshold).toFixed(2)} | +${h.currencyEarned} | ${h.cardsUsed.join(', ')} |`);
   }
   lines.push('');
-  writeFileSync(join(outDir, `${date}-${label}-seed${seed}.json`), JSON.stringify(exportRun(final, defaultBalance)));
+  writeFileSync(join(outDir, `${date}-${label}-seed${seed}.json`), JSON.stringify(exportRun(final, balance)));
 }
 
 const report = [lines[0], lines[1], lines[2], '', '## Summary', '', ...summary, '', ...lines.slice(3)].join('\n');

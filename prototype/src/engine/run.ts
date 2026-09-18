@@ -5,7 +5,7 @@
  *   ROUND_START ─START_ROUND─► EXTEND ─SUBMIT─► SCORED ─CONTINUE─► SHOP ─LEAVE─► ROUND_START
  *        │                        │ FORFEIT ─────► SCORED (score 0, always a fail)
  *        │                        │ PLAY_STEP / UNDO_STEP / USE_CARD
- *        │                                        │ fail w/ life or Insurance → ROUND_START (no shop)
+ *        │                                        │ fail w/ life or Insurance → ROUND_START (same round replayed, no shop)
  *        │ boss round                             │ fail w/o life → GAME_OVER
  *        ▼
  *   BOSS_INTRO ─START_BOSS─► BOSS_PLAY ─END_BOSS─► BOSS_END ─CONTINUE─► BOSS_REWARD ─PICK_MODIFIER─► ROUND_START / WIN
@@ -257,6 +257,12 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       const sources = breakdown.passed ? economy.regularRoundCurrency(pre, content, { breakdown, shape: inputs.shape, natural, streakAfter }) : [];
       const criteriaMet = breakdown.passed ? economy.shopCriteria(pre, breakdown, inputs.shape) : [];
       let after = settle(pre, breakdown, streakAfter, sources, inputs.notes, criteriaMet, content);
+      if (after.lastResult?.outcome === 'life_lost' || after.lastResult?.outcome === 'insured') {
+        // A life buys a replay of this round: undo everything since the first step so the round starts fresh.
+        const first = state.undo[0];
+        const reverted: Partial<StepSnapshot> = first ? (({ kind: _k, ...rest }) => rest)(first) : {};
+        return ok({ ...after, ...reverted, phase: 'SCORED', pool: tiles.returnTiles(reverted.pool ?? state.pool, reverted.hand ?? state.hand), hand: [], steps: [], undo: [], chainDirty: false });
+      }
       if (breakdown.passed && natural) after = mods.onNaturalRound(after, content);
       // Secret words (P5-07): the next ROUND_START jumps to the boss.
       const text = chainMod.text(chain);
@@ -329,8 +335,8 @@ function apply(state: RunState, action: Action, content: EngineContent): Step {
       if (!result) return fail('no round result to continue from');
       if (result.outcome === 'game_over') return ok({ ...state, phase: 'GAME_OVER' });
       if (result.outcome === 'life_lost' || result.outcome === 'insured') {
-        // Regular: move on without a shop. Boss: retry the same boss (D1).
-        return ok(state.phase === 'SCORED' ? advanceRound(state, balance) : { ...state, phase: 'ROUND_START', boss: null });
+        // The round is replayed (regular: a fresh hand; boss: a fresh modifier roll, D1).
+        return ok({ ...state, phase: 'ROUND_START', boss: null });
       }
       if (state.phase === 'BOSS_END') return ok({ ...state, phase: 'BOSS_REWARD' });
       const priceMult = mods.priceMult(state, content, loadoutFns.priceMult(state.preRun, balance));

@@ -14,19 +14,26 @@ describe('rounds and thresholds', () => {
     expect([1, 4, 5, 8, 9, 24].map((r) => S.bossesBefore(r, b))).toEqual([0, 0, 1, 1, 2, 5]);
   });
 
-  it('threshold = round(T1 × growth^(round−1) × bossFactor)', () => {
+  it('threshold = round(T1 × Π growth(block) × bossFactor)', () => {
     expect(S.threshold(1, b)).toBe(4);
     expect(S.threshold(2, b)).toBe(6);
     expect(S.threshold(3, b)).toBe(9);
     expect(S.threshold(4, b)).toBe(41); // 13.5 × 3 = 40.5
-    expect(S.threshold(24, b)).toBe(134673);
+    expect(S.threshold(5, b)).toBe(27); // 13.5 × 2
+    expect(S.threshold(8, b)).toBe(648); // 13.5 × 2^4 × 3
+    expect(S.threshold(12, b)).toBe(25313);
+    expect(S.threshold(24, b)).toBe(192296887207);
+    expect(S.growthFor(1, b)).toBe(1.5);
+    expect(S.growthFor(5, b)).toBe(2);
+    expect(S.growthFor(24, b)).toBe(5);
   });
 
   it('threshold responds to balance changes', () => {
-    const steep = balanceWith({ scoring: { round1Threshold: 10, thresholdGrowth: 2, bossThresholdFactor: 3 } });
+    const steep = balanceWith({ scoring: { round1Threshold: 10, thresholdGrowthByBlock: [2], bossThresholdFactor: 3 } });
     expect(S.threshold(1, steep)).toBe(10);
     expect(S.threshold(3, steep)).toBe(40);
     expect(S.threshold(4, steep)).toBe(240);
+    expect(S.threshold(9, steep)).toBe(2560); // a single-block table applies to every round
   });
 });
 
@@ -82,8 +89,8 @@ describe('scoreRegular', () => {
     expect(r.effectiveMorphemes).toBe(14);
     expect(r.extensionBonus).toBe(1.5);
     expect(r.score).toBe(13072);
-    expect(r.threshold).toBe(2627);
-    expect(r.passed).toBe(true);
+    expect(r.threshold).toBe(2392031);
+    expect(r.passed).toBe(false);
     expect(r.kind).toBe('regular');
   });
 
@@ -109,7 +116,7 @@ describe('scoreBoss', () => {
   it('uses boss word points × morpheme mult × in-run mult, no extension bonus', () => {
     const r = S.scoreBoss({ round: 8, bossWordPoints: 52, morphemes: 6, inRunMult: 1.2 }, b);
     expect(r.score).toBe(336);
-    expect(r.threshold).toBe(205);
+    expect(r.threshold).toBe(648);
     expect(r.extensionBonus).toBe(1);
     expect(r.kind).toBe('boss');
   });
