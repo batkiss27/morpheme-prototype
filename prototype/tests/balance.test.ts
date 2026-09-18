@@ -25,8 +25,8 @@ describe('balance', () => {
     expect(defaultBalance.economy.bossClear).toHaveLength(6);
   });
 
-  it('unmodified play reaches the first boss: thresholds 4 / 6 / 9 / 41', () => {
-    expect([1, 2, 3, 4].map((r) => scoring.threshold(r, defaultBalance))).toEqual([4, 6, 9, 41]);
+  it('unmodified play reaches the first boss: thresholds 4 / 5 / 6 / 23', () => {
+    expect([1, 2, 3, 4].map((r) => scoring.threshold(r, defaultBalance))).toEqual([4, 5, 6, 23]);
   });
 
   it('Steep Curve risk modifier has four levels of scale and points', () => {

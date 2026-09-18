@@ -22,3 +22,8 @@ runs end at rounds 8–12 (B2 at 0.31–0.96×, B3 at 0.13×). Gentler tables
 (1.5/1.75/2/2.25/2.5/3 and 1.5/1.75/1.75/2/2/2.5) also stop the bot at B3.
 The bot uses no card synergies, so treat these as floors; the decision is
 logged in the workbook's Decisions tab.
+
+## 2026-09-18 — growth 1.25 / 1.5 / 1.75 / 2 / 2.25 / 2.5 (`2026-09-18-curve3.md`)
+
+Hand size 8. Bot: 0/10 wins, but runs now reach rounds 11–16 (7 of 10 beat B3;
+all die at B4 = 17.8k or earlier). Ratios at the fatal round 0.10–0.67.

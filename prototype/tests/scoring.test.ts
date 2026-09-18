@@ -16,17 +16,17 @@ describe('rounds and thresholds', () => {
 
   it('threshold = round(T1 × Π growth(block) × bossFactor)', () => {
     expect(S.threshold(1, b)).toBe(4);
-    expect(S.threshold(2, b)).toBe(6);
-    expect(S.threshold(3, b)).toBe(9);
-    expect(S.threshold(4, b)).toBe(41); // 13.5 × 3 = 40.5
-    expect(S.threshold(5, b)).toBe(27); // 13.5 × 2
-    expect(S.threshold(8, b)).toBe(648); // 13.5 × 2^4 × 3
-    expect(S.threshold(12, b)).toBe(25313);
-    expect(S.threshold(17, b)).toBe(2221172); // 683,437.5 × 3.25
-    expect(S.threshold(24, b)).toBe(34326196222);
-    expect(S.growthFor(1, b)).toBe(1.5);
-    expect(S.growthFor(5, b)).toBe(2);
-    expect(S.growthFor(24, b)).toBe(3.5);
+    expect(S.threshold(2, b)).toBe(5);
+    expect(S.threshold(3, b)).toBe(6); // 6.25
+    expect(S.threshold(4, b)).toBe(23); // 7.8125 × 3
+    expect(S.threshold(5, b)).toBe(12); // 7.8125 × 1.5
+    expect(S.threshold(8, b)).toBe(119);
+    expect(S.threshold(12, b)).toBe(1113);
+    expect(S.threshold(17, b)).toBe(13354);
+    expect(S.threshold(24, b)).toBe(17825372);
+    expect(S.growthFor(1, b)).toBe(1.25);
+    expect(S.growthFor(5, b)).toBe(1.5);
+    expect(S.growthFor(24, b)).toBe(2.5);
   });
 
   it('threshold responds to balance changes', () => {
@@ -90,7 +90,7 @@ describe('scoreRegular', () => {
     expect(r.effectiveMorphemes).toBe(14);
     expect(r.extensionBonus).toBe(1.5);
     expect(r.score).toBe(13072);
-    expect(r.threshold).toBe(2221172);
+    expect(r.threshold).toBe(13354);
     expect(r.passed).toBe(false);
     expect(r.kind).toBe('regular');
   });
@@ -117,7 +117,7 @@ describe('scoreBoss', () => {
   it('uses boss word points × morpheme mult × in-run mult, no extension bonus', () => {
     const r = S.scoreBoss({ round: 8, bossWordPoints: 52, morphemes: 6, inRunMult: 1.2 }, b);
     expect(r.score).toBe(336);
-    expect(r.threshold).toBe(648);
+    expect(r.threshold).toBe(119);
     expect(r.extensionBonus).toBe(1);
     expect(r.kind).toBe('boss');
   });
@@ -126,6 +126,7 @@ describe('scoreBoss', () => {
 describe('roundHalfUp', () => {
   it('rounds .5 up like Excel ROUND for positives', () => {
     expect(S.roundHalfUp(13.5)).toBe(14);
+    expect(S.roundHalfUp(6.25)).toBe(6);
     expect(S.roundHalfUp(20.25)).toBe(20);
     expect(S.roundHalfUp(20.5)).toBe(21);
     expect(S.roundHalfUp(2.4999)).toBe(2);
