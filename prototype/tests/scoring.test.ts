@@ -22,10 +22,11 @@ describe('rounds and thresholds', () => {
     expect(S.threshold(5, b)).toBe(27); // 13.5 × 2
     expect(S.threshold(8, b)).toBe(648); // 13.5 × 2^4 × 3
     expect(S.threshold(12, b)).toBe(25313);
-    expect(S.threshold(24, b)).toBe(192296887207);
+    expect(S.threshold(17, b)).toBe(2221172); // 683,437.5 × 3.25
+    expect(S.threshold(24, b)).toBe(34326196222);
     expect(S.growthFor(1, b)).toBe(1.5);
     expect(S.growthFor(5, b)).toBe(2);
-    expect(S.growthFor(24, b)).toBe(5);
+    expect(S.growthFor(24, b)).toBe(3.5);
   });
 
   it('threshold responds to balance changes', () => {
@@ -89,7 +90,7 @@ describe('scoreRegular', () => {
     expect(r.effectiveMorphemes).toBe(14);
     expect(r.extensionBonus).toBe(1.5);
     expect(r.score).toBe(13072);
-    expect(r.threshold).toBe(2392031);
+    expect(r.threshold).toBe(2221172);
     expect(r.passed).toBe(false);
     expect(r.kind).toBe('regular');
   });

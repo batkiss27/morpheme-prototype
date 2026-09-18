@@ -141,12 +141,12 @@ export interface Balance {
 
 export const defaultBalance: Balance = {
   rounds: { total: 24, bossEvery: 4 },
-  hand: { size: 10 },
+  hand: { size: 8 },
   lives: { base: 0 },
   scoring: {
     multiplierBase: 1.4,
     round1Threshold: 4,
-    thresholdGrowthByBlock: [1.5, 2, 2.5, 3, 3.5, 5],
+    thresholdGrowthByBlock: [1.5, 2, 2.5, 3, 3.25, 3.5],
     growthBlockSize: 4,
     bossThresholdFactor: 3,
     strain: 1,

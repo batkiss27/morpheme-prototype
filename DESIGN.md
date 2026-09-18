@@ -97,8 +97,8 @@ Lexicon screen: spend points, set loadout (§6)
 - The player draws from **one tile pool per run**. The starting composition is the
   standard Scrabble distribution (100 tiles including 2 blanks), adjusted by the
   loadout and by Loanword cards during the run.
-- Each round the player draws a **hand** (default 10; raised from 7 so early
-  rounds nearly always offer a natural extension) and may play tiles from it.
+- Each round the player draws a **hand** (default 8; Substrate adds more) and
+  may play tiles from it.
 - **[proposal] Tiles played into the word are committed** — they leave the pool for
   the rest of the run and live in the word. The pool is therefore a finite resource
   that Loanword cards replenish. (Alternative: played tiles return to the pool;
@@ -262,8 +262,8 @@ boss round score    = Σ over words placed: (sum of tile values)
   24-round scenario.
 - **Strain** lowers the effective morpheme count by 1 for that round.
 - Thresholds grow per round by a factor that rises in blocks of four rounds —
-  ×1.5 for rounds 1–4, ×2 for 5–8, ×2.5 for 9–12, ×3 for 13–16, ×3.5 for
-  17–20, ×5 for 21–24 — with a ×3 bump on Boss Rounds; see the *Scoring* tab.
+  ×1.5 for rounds 1–4, ×2 for 5–8, ×2.5 for 9–12, ×3 for 13–16, ×3.25 for
+  17–20, ×3.5 for 21–24 — with a ×3 bump on Boss Rounds; see the *Scoring* tab.
   **Tuning intent:** an unmodified run (no loadout, no cards) should almost
   always reach the first Boss Round (4 / 6 / 9 / 41 for rounds 1–4); from B2
   on, multi-step rounds, streaks and in-run modifiers are expected to carry the

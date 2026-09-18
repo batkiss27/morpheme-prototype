@@ -19,7 +19,7 @@ describe('balance', () => {
   it('has the run shape from DESIGN.md §2.1', () => {
     expect(defaultBalance.rounds.total).toBe(24);
     expect(defaultBalance.rounds.bossEvery).toBe(4);
-    expect(defaultBalance.hand.size).toBe(10);
+    expect(defaultBalance.hand.size).toBe(8);
     expect(defaultBalance.boss.feedIntervalMs).toHaveLength(6);
     expect(defaultBalance.boss.starterMorphemes).toHaveLength(6);
     expect(defaultBalance.economy.bossClear).toHaveLength(6);

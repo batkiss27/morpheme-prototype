@@ -9,8 +9,8 @@
       2,
       2.5,
       3,
-      3.5,
-      5
+      3.25,
+      3.5
     ],
     "bossThresholdFactor": 3,
     "strain": 1,
@@ -372,7 +372,7 @@
         "extensionBonus": 1.5,
         "inRunMult": 1.8,
         "score": 13072,
-        "threshold": 2392031,
+        "threshold": 2221172,
         "pass": false
       }
     },
@@ -393,7 +393,7 @@
         "extensionBonus": 1,
         "inRunMult": 1.8,
         "score": 9001,
-        "threshold": 8372109,
+        "threshold": 7218809,
         "pass": false
       }
     },
@@ -414,7 +414,7 @@
         "extensionBonus": 1,
         "inRunMult": 1.8,
         "score": 19042,
-        "threshold": 29302383,
+        "threshold": 23461128,
         "pass": false
       }
     },
@@ -435,7 +435,7 @@
         "extensionBonus": 1,
         "inRunMult": 1.8,
         "score": 37803,
-        "threshold": 307675020,
+        "threshold": 228745997,
         "pass": false
       }
     },
@@ -456,7 +456,7 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 25513,
-        "threshold": 512791699,
+        "threshold": 266870330,
         "pass": false
       }
     },
@@ -477,7 +477,7 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 50616,
-        "threshold": 2563958496,
+        "threshold": 934046156,
         "pass": false
       }
     },
@@ -498,7 +498,7 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 51835,
-        "threshold": 12819792480,
+        "threshold": 3269161545,
         "pass": false
       }
     },
@@ -519,7 +519,7 @@
         "extensionBonus": 1,
         "inRunMult": 2.0,
         "score": 145139,
-        "threshold": 192296887207,
+        "threshold": 34326196222,
         "pass": false
       }
     }

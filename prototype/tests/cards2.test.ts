@@ -1,6 +1,6 @@
 /** P8-02: the remaining cards, in rarity order. */
 import { describe, expect, it } from 'vitest';
-import { cards as cardContent } from '../src/content';
+import { cards as cardContent, defaultBalance } from '../src/content';
 import { allTiles, cards, chain as C, lastError, reduce, scoringInputs } from '../src/engine';
 import type { RunState } from '../src/engine';
 import { balanceWith, chainFromMorphemes, content, tilesFor, withCards } from './helpers';
@@ -175,7 +175,7 @@ describe('Exotic', () => {
     s = playFromHand(s, c, 2, 'start');
     s = reduce(reduce(reduce(s, { type: 'SUBMIT' }, c), { type: 'CONTINUE' }, c), { type: 'LEAVE' }, c);
     s = reduce(s, { type: 'START_ROUND' }, c);
-    expect(s.hand).toHaveLength(11);
+    expect(s.hand).toHaveLength(defaultBalance.hand.size + 1);
   });
 
   it('Wildcard Round doubles the extension bonus', () => {
